@@ -20,3 +20,14 @@ edit appsettings.config with the Home Assistant URL and the Long-Lived Access To
   <add key="haToken" value ="awsdfljhsdjkfhs...........3zFHM" />
 </appSettings>
 ```
+
+Works with these 64 bit Logitech Flight Instrument Panel Drivers (currently not with older saitek drivers) :
+
+https://support.logi.com/hc/en-us/articles/360024848713--Downloads-Flight-Instrument-Panel
+
+Software Version: 8.0.134.0
+Last Update: 2018-01-05
+64-bit
+
+https://download01.logi.com/web/ftp/pub/techsupport/simulation/Flight_Instrument_Panel_x64_Drivers_8.0.134.0.exe
+
