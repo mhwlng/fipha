@@ -1,0 +1,156 @@
+td.divider {
+    font-size: 2px;
+    border-bottom: 1px solid #FFB000;
+}
+
+.caption {
+    color: #FFFFFF;
+}
+
+.data {
+     color: #FFB000;
+ }
+
+.right {
+    text-align: right;
+}
+
+.center {
+    text-align: center;
+}
+
+.alarm  {
+    background-color: red;
+    color: white;
+}
+
+div.main {
+    font-family: 'Arial Unicode MS';
+    font-size: 15px;
+    color: white;
+    /*white-space: nowrap;*/
+}
+
+div.imgcenter {
+    text-align: center;
+}
+.cardcaption {
+    width: 100%;
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: lightgray;
+}
+
+div.menu {
+    font-family: 'Arial Unicode MS';
+    font-size: 15px;
+    color: white;
+}
+
+.menu table {
+    border-right: 1px solid #FFB000;
+    border-bottom: 1px solid #FFB000;
+    border-spacing: 0;
+    text-align: center;
+}
+
+.menu table td {
+    height: 43px;
+    vertical-align: top;
+    padding-top: 1px;
+}
+
+.menu table td div {
+    padding-right: 5px;
+    width: 100%;
+    text-align: center;
+}
+
+.menu table td div.highlight {
+    color: black;
+    background-color: #FFB000;
+}
+
+.menu table td div.menucursor {
+    color: white;
+    background-color: red;
+}
+
+
+.menu table td div.navigation {
+    color: #FFB000;
+}
+
+.menu table td div.disabled {
+    color: #303030;
+    background-color: black;
+}
+
+
+.main table {
+    border-spacing: 5px;
+    /*max-width: 100%;*/
+    /*width: 300px;*/
+    width: 99%;
+}
+
+.menu table {
+    width: 109px;
+}
+
+.main table.divider {
+    border-spacing: 5px;
+    width: 100%;
+}
+
+.main table.zebratable {
+    border-spacing: 0;
+}
+
+.main table td.nowrap {
+    /*width: 240px;*/
+    width: 77%;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.main table td.wrap {
+    /*width: 240px;*/
+    width: 83%;
+}
+
+tr.zebraodd td {
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+tr.zebraeven td {
+    background-color: #191919;
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+td.indent {
+    padding-left: 20px;
+}
+
+ul {
+    margin-left: 20px;
+}
+
+.smallfont {
+    font-size: 11px;
+}
+
+.galnetbody {
+    margin-right: 10px;
+}
+
+.galnetbody br {
+    margin-bottom: 10px;
+}
+
+.galnettitle {
+    margin-bottom: 20px;
+}

@@ -1,0 +1,29 @@
+@using System
+@using System.Collections.Generic
+@using fipha
+@using System.Linq
+@{
+    Layout = "layout.cshtml";
+}
+
+<div class="main">
+
+    <div class="cardcaption">&nbsp;</div>
+  
+    @*<div style="text-align: center;">@Model.State</div>*@
+    <div style="text-align: center;">@Model.Artist</div>
+    <div style="text-align: center;font-weight: bold">@Model.Title</div>
+     <div style="text-align: center;">@Model.AlbumName</div>
+    @if (!string.IsNullOrEmpty(Model.SeriesName))
+    {
+        <div style="text-align: center;">@Model.SeriesName <text>S</text>@Model.Season<text>E</text>@Model.Episode</div>
+    } 
+    @if (!string.IsNullOrEmpty(Model.PictureUrl))
+    {
+        <div style="text-align: center;">
+
+            <img src="@Model.PictureUrl" width="150" height="150"/>
+        </div>
+    }
+
+</div>

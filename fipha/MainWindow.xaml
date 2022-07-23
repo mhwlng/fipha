@@ -1,0 +1,10 @@
+﻿<Window x:Class="fipha.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fipha="clr-namespace:fipha"
+        WindowStyle="None"
+        Closing="MainWindow_Closing"
+        MouseDown="MainWindow_OnMouseDown"
+        Title="fip-fipha" Height="300" Width="500" SizeToContent="WidthAndHeight" ResizeMode="NoResize" >
+        <Image Name="im"  Height="240" Width="320" />
+</Window>
