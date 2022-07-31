@@ -3,7 +3,7 @@
 Now Playing Display for Logitech Flight Instrument Panel for Home Assistant Media Players
 
 
-![Screenshot 1](https://i.imgur.com/xfrzAxM.jpg)
+![Screenshot 1](https://i.imgur.com/UNOTXH2.jpeg)
 
 Use the right rotary encoder to scroll vertically.
 
