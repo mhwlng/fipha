@@ -202,8 +202,8 @@ namespace fipha
                             var state = await App.StatesClient.GetState(mediaPlayer);
 
                             if (state != null && state.State != "off" && state.State != "standby" &&
-                                state.State != "unavailable" && state.State != "idle" && state.Attributes?.Any() == true &&
-                                state.Attributes.ContainsKey("media_content_id") && state.Attributes["media_content_id"] is long)
+                                state.State != "unavailable"  && state.Attributes?.Any() == true /*&&
+                                state.Attributes.ContainsKey("media_content_id") && state.Attributes["media_content_id"] is long*/)
                             {
                                 if (MediaPlayerStates.Contains(mediaPlayer))
                                 {
@@ -225,7 +225,7 @@ namespace fipha
 
                         FipHandler.RefreshHAPages();
 
-                        await Task.Delay(2 * 1000, _haTokenSource.Token); // repeat every 2 seconds
+                        await Task.Delay(1000, _haTokenSource.Token); // repeat every 2 seconds
                     }
 
                 }, haToken);

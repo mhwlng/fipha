@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Media.Imaging;
+using HADotNet.Core;
+using HADotNet.Core.Clients;
 using HADotNet.Core.Models;
 using TheArtOfDev.HtmlRenderer.WinForms;
 using RazorEngine;
@@ -25,6 +27,7 @@ using Image = System.Drawing.Image;
 
 namespace fipha
 {
+
    
     public class MyHtmlHelper
     {
@@ -46,6 +49,26 @@ namespace fipha
 
     internal class FipPanel
     {
+        const long PAUSE = 1;
+        const long SEEK = 2;
+        const long VOLUME_SET = 4;
+        const long VOLUME_MUTE = 8;
+        const long PREVIOUS_TRACK = 16;
+        const long NEXT_TRACK = 32;
+
+        const long TURN_ON = 128;
+        const long TURN_OFF = 256;
+        const long PLAY_MEDIA = 512;
+        const long VOLUME_STEP = 1024;
+        const long SELECT_SOURCE = 2048;
+        const long STOP = 4096;
+        const long CLEAR_PLAYLIST = 8192;
+        const long PLAY = 16384;
+        const long SHUFFLE_SET = 32768;
+        const long SELECT_SOUND_MODE = 65536;
+        const long BROWSE_MEDIA = 131072;
+        const long REPEAT_SET = 262144;
+        const long GROUPING = 524288;
 
         private readonly object _refreshDevicePageLock = new object();
 
@@ -88,10 +111,6 @@ namespace fipha
 
         private double ScrollBarHeight => _htmlWindowHeight -7.0;
 
-        private int ChartImageDisplayWidth => _htmlWindowWidth - 25;
-
-        private const int ChartImageDisplayHeight = 60;
-        
         private DirectOutputClass.PageCallback _pageCallbackDelegate;
         private DirectOutputClass.SoftButtonCallback _softButtonCallbackDelegate;
 
@@ -193,6 +212,36 @@ namespace fipha
 
                 var mustRender = true;
 
+                var serviceClient = ClientFactory.GetClient<ServiceClient>();
+
+                var currentMediaPlayerState = string.Empty;
+                var currentMediaPlayerKey = string.Empty;
+
+                var pause = false;
+                var previousTrack = false;
+                var nextTrack = false;
+                var play = false;
+
+                if (App.MediaPlayerStates.Count > 0)
+                {
+                    var currentMediaPlayer = ((StateObject)(App.MediaPlayerStates[CurrentCard]));
+
+                    currentMediaPlayerState = currentMediaPlayer.State;
+                    currentMediaPlayerKey = currentMediaPlayer.EntityId;
+
+                    if (currentMediaPlayerState != "idle" && currentMediaPlayer.Attributes.ContainsKey("supported_features"))
+                    {
+                        var supportedFeatures = (long)currentMediaPlayer.Attributes["supported_features"];
+
+                        pause = (supportedFeatures & PAUSE) > 0;
+                        previousTrack = (supportedFeatures & PREVIOUS_TRACK) > 0;
+                        nextTrack = (supportedFeatures & NEXT_TRACK) > 0;
+                        play = (supportedFeatures & PLAY) > 0;
+
+                    }
+
+                }
+
                 switch (button)
                 {
                     case 8: // scroll clockwise
@@ -249,6 +298,58 @@ namespace fipha
                     {
                         switch (button)
                         {
+                            case 64:
+                                if (play && pause && !string.IsNullOrEmpty(currentMediaPlayerKey))
+                                {
+                                    try
+                                    {
+                                        serviceClient.CallService("media_player", "media_play_pause", new { entity_id = currentMediaPlayerKey }).GetAwaiter().GetResult();
+                                    }
+                                    catch
+                                    {
+                                      //
+                                    }
+                                    
+                                    mustRefresh = true;
+
+                                }
+
+                                break;
+                            case 128:
+
+                                if (nextTrack && !string.IsNullOrEmpty(currentMediaPlayerKey))
+                                {
+                                    try
+                                    {
+                                        serviceClient.CallService("media_player", "media_next_track", new { entity_id = currentMediaPlayerKey }).GetAwaiter().GetResult();
+                                    }
+                                    catch
+                                    {
+                                        //
+                                    }
+
+                                    mustRefresh = true;
+
+                                }
+
+                                break;
+                            case 256:
+
+                                if (previousTrack && !string.IsNullOrEmpty(currentMediaPlayerKey))
+                                {
+                                    try
+                                    {
+                                        serviceClient.CallService("media_player", "media_previous_track", new { entity_id = currentMediaPlayerKey }).GetAwaiter().GetResult();
+                                    }
+                                    catch
+                                    {
+                                        //
+                                    }
+
+                                    mustRefresh = true;
+
+                                }
+                                break;
                             case 512:
 
                                 CurrentCard++;
@@ -359,26 +460,34 @@ namespace fipha
         
         private void OnImageLoad(object sender, HtmlImageLoadEventArgs e)
         {
-            
-            /*
-            try
+            if (e.Src.StartsWith("background."))
             {
-                var image = new Bitmap(ChartImageDisplayWidth, ChartImageDisplayHeight);
-
-                using (var graphics = Graphics.FromImage(image))
+                try
                 {
-                
+                    var image = Image.FromFile(Path.Combine(App.ExePath, "Templates\\images\\") + e.Src);
+
+                    var tempBitmap = new Bitmap(320, 240);
+                    
+                    using (var graphics = Graphics.FromImage(tempBitmap))
+                    {
+                        graphics.DrawImage(image, 0, 0);
+
+                        graphics.DrawRectangle(_whitePen,
+                            new Rectangle(0, 0, 100, 100));
+
+                    }
+
+                    e.Callback(tempBitmap);
+
                 }
+                catch//(Exception ex)
+                {
+                    var image = new Bitmap(1, 1);
 
-                e.Callback(image);
-
+                    e.Callback(image);
+                }
             }
-            catch
-            {
-                var image = new Bitmap(1, 1);
 
-                e.Callback(image);
-            }*/
         }
 
 
@@ -413,6 +522,11 @@ namespace fipha
                         var currentMediaPlayerState = string.Empty;
                         var currentMediaPlayerPicture = string.Empty;
 
+                        var pause = false;
+                        var previousTrack = false;
+                        var nextTrack = false;
+                        var play = false;
+                        
                         var str = "";
 
                         if (CurrentCard < 0)
@@ -477,6 +591,18 @@ namespace fipha
                             }
 
                             currentMediaPlayerState = currentMediaPlayer.State;
+
+                            if (currentMediaPlayerState != "idle" && currentMediaPlayer.Attributes.ContainsKey("supported_features"))
+                            {
+                                var supportedFeatures = (long)currentMediaPlayer.Attributes["supported_features"];
+                                
+                                pause = (supportedFeatures & PAUSE) > 0;
+                                previousTrack = (supportedFeatures & PREVIOUS_TRACK) > 0;
+                                nextTrack = (supportedFeatures & NEXT_TRACK) > 0;
+                                play = (supportedFeatures & PLAY) > 0;
+
+                            }
+                           
                         }
 
                         /*
@@ -673,17 +799,66 @@ namespace fipha
                             graphics.DrawImage(_cardcaptionHtmlImage, HtmlWindowXOffset, 0);
                         }
 
+                        if (play && pause)
+                        {
+                            if (currentMediaPlayerState != "playing")
+                            {
+                                var imagePlay = Image.FromFile(Path.Combine(App.ExePath, "Templates\\images\\") +
+                                                               "play-3-24.png");
+                                graphics.DrawImage(imagePlay, HtmlWindowXOffset, 42);
+                            }
+                            else
+                            {
+                                var imagePause = Image.FromFile(Path.Combine(App.ExePath, "Templates\\images\\") +
+                                                                "pause-3-24.png");
+                                graphics.DrawImage(imagePause, HtmlWindowXOffset, 42);
+                            }
+                        }
+
+                        if (nextTrack)
+                        {
+                            var imageNext = Image.FromFile(Path.Combine(App.ExePath, "Templates\\images\\") +
+                                                           "arrow-43-24.png");
+                            graphics.DrawImage(imageNext, HtmlWindowXOffset, 86);
+                        }
+
+                        if (previousTrack)
+                        {
+                            var imagePrevious = Image.FromFile(Path.Combine(App.ExePath, "Templates\\images\\") +
+                                                               "arrow-68-24.png");
+                            graphics.DrawImage(imagePrevious, HtmlWindowXOffset, 129);
+                        }
+
+                        if (App.MediaPlayerStates.Count > 1)
+                        {
+                            var imageNextPlayer = Image.FromFile(Path.Combine(App.ExePath, "Templates\\images\\") +
+                                                               "arrow-28-24.png");
+                            graphics.DrawImage(imageNextPlayer, HtmlWindowXOffset, 172);
+
+                            var imagePreviousPlayer = Image.FromFile(Path.Combine(App.ExePath, "Templates\\images\\") +
+                                                               "arrow-92-24.png");
+                            graphics.DrawImage(imagePreviousPlayer, HtmlWindowXOffset, 212);
+                        }
+
                         SendImageToFip(DEFAULT_PAGE, fipImage);
 
                         if (_initOk)
                         {
-                            for (uint i = 2; i <= 6; i++)
-                            {
-                                SetLed(i, false);
-                            }
+                            SetLed(2, play && pause);
+                            SetLed(3, nextTrack);
+                            SetLed(4, previousTrack);
 
-                            SetLed(5, true);
-                            SetLed(6, true);
+                            if (App.MediaPlayerStates.Count <= 1)
+                            {
+                                SetLed(5, false);
+                                SetLed(6, false);
+
+                            }
+                            else
+                            {
+                                SetLed(5, true);
+                                SetLed(6, true);
+                            }
 
                         }
 
