@@ -10,6 +10,8 @@ Use the right rotary encoder to scroll vertically.
 Use the left rotary encoder to show another media player.
 Also, the S5 button shows the next media player and the S6 button shows the previous media player.
 
+When supported by the mediaplayer: S2,S3,S4 buttons will allow play/pause, next/previous track.
+
 edit appsettings.config with the Home Assistant URL and the Long-Lived Access Token that can be created in the profle screen in Home assistant.
 
 ```
