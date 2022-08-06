@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -33,8 +34,9 @@ namespace fipha
     public partial class App : Application
     {
 
-        public static string haUrl { get; set; }
-        public static string haToken { get; set; }
+        public static string HaUrl { get; set; }
+        public static string HaToken { get; set; }
+        public static HashSet<string> ExcludePlayers { get; set; }
 
         public static bool IsShuttingDown { get; set; }
 
@@ -44,7 +46,7 @@ namespace fipha
         public static List<string> MediaPlayers { get; set; }
 
         public static OrderedDictionary MediaPlayerStates = new OrderedDictionary();
-        public static Task HATask;
+        public static Task HaTask;
         private static CancellationTokenSource _haTokenSource = new CancellationTokenSource();
 
         private static Mutex _mutex;
@@ -102,11 +104,12 @@ namespace fipha
             if (File.Exists(Path.Combine(ExePath, "appSettings.config")) &&
                 ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
             {
-                haUrl = appSection["haUrl"];
-                haToken = appSection["haToken"];
+                HaUrl = appSection["haUrl"];
+                HaToken = appSection["haToken"];
+                ExcludePlayers = new HashSet<string>(appSection["excludePlayers"].Split(',').Select(p => p.ToLower().Trim()).ToList());
             }
 
-            ClientFactory.Initialize($"{haUrl}", haToken);
+            ClientFactory.Initialize($"{HaUrl}", HaToken);
 
             EntityClient = ClientFactory.GetClient<EntityClient>();
 
@@ -140,6 +143,8 @@ namespace fipha
 
                 Engine.Razor = RazorEngineService.Create(config);
 
+                Engine.Razor.Compile("init.cshtml", null);
+                Engine.Razor.Compile("menu.cshtml", null);
                 Engine.Razor.Compile("cardcaption.cshtml", null);
                 Engine.Razor.Compile("layout.cshtml", null);
 
@@ -183,7 +188,7 @@ namespace fipha
                 
                 var haToken = _haTokenSource.Token;
 
-                HATask = Task.Run(async () =>
+                HaTask = Task.Run(async () =>
                 {
                    
                     Log.Info("HA task started");
@@ -201,11 +206,11 @@ namespace fipha
 
                             var state = await App.StatesClient.GetState(mediaPlayer);
 
-                            if (state != null && state.State != "off" && state.State != "standby" &&
+                            if (!ExcludePlayers.Contains(mediaPlayer) && state != null && state.State != "off" && state.State != "standby" &&
                                 state.State != "unavailable"  && state.Attributes?.Any() == true /*&&
                                 state.Attributes.ContainsKey("media_content_id") && state.Attributes["media_content_id"] is long*/)
                             {
-                                if (MediaPlayerStates.Contains(mediaPlayer))
+                                if (MediaPlayerStates.Contains(mediaPlayer.ToLower()))
                                 {
                                     MediaPlayerStates[mediaPlayer] = state;
                                 }
@@ -247,7 +252,7 @@ namespace fipha
 
             try
             {
-                HATask?.Wait(haToken);
+                HaTask?.Wait(haToken);
             }
             catch (OperationCanceledException)
             {

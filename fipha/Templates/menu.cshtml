@@ -1,0 +1,32 @@
+
+@using fipha
+<div class="menu">
+
+    @if (Model.CurrentPage == LcdPage.HomeMenu)
+    {
+        <table class="menu">
+            <tbody>
+                <tr>
+                    <td><div class="@(Model.CurrentTab == LcdTab.NowPlaying ? "highlight" : "") @(Model.Cursor == LcdTab.NowPlaying ? "menucursor" : "")">NOW PLAYING</div></td>
+                </tr>
+                <tr>
+                    <td><div class="disabled">&nbsp;</div></td>
+                </tr>
+                <tr>
+                    <td><div class="disabled">&nbsp;</div></td>
+                </tr>
+                <tr>
+                    <td><div class="disabled">&nbsp;</div></td>
+                </tr>
+                <tr>
+                    <td><div class="disabled">&nbsp;</div></td>
+                </tr>
+                <tr>
+                    <td><div class="disabled">&nbsp;</div></td>
+                </tr>
+
+            </tbody>
+        </table>
+    }
+  
+</div>

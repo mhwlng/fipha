@@ -5,7 +5,11 @@ Now Playing Display for Logitech Flight Instrument Panel for Home Assistant Medi
 
 ![Screenshot 1](https://i.imgur.com/UNOTXH2.jpeg)
 
+The S1 button opens the menu.
+
 Use the right rotary encoder to scroll vertically.
+
+On the now playing screen :
 
 Use the left rotary encoder to show another media player.
 Also, the S5 button shows the next media player and the S6 button shows the previous media player.
@@ -14,12 +18,15 @@ When supported by the mediaplayer: S2,S3,S4 buttons will allow play/pause, next/
 
 edit appsettings.config with the Home Assistant URL and the Long-Lived Access Token that can be created in the profle screen in Home assistant.
 
+Also players that should be excluded can be defined
+
 ```
 <?xml version="1.0" encoding="utf-8" ?>
 <appSettings>
   <add key="EnableWindowsFormsHighDpiAutoResizing" value="false" />
   <add key="haUrl" value ="http://192.168.2.34:8123/" />
   <add key="haToken" value ="awsdfljhsdjkfhs...........3zFHM" />
+  <add key="excludePlayers" value ="media_player.nvidia_shield,media_player.shield_cast,media_player.everywhere,media_player.bedroom_dot,media_player.livingroom_dot"/>
 </appSettings>
 ```
 

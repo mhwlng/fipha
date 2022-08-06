@@ -1,6 +1,6 @@
 td.divider {
     font-size: 2px;
-    border-bottom: 1px solid #FFB000;
+    border-bottom: 1px solid #42C0FB;
 }
 
 .caption {
@@ -8,7 +8,7 @@ td.divider {
 }
 
 .data {
-     color: #FFB000;
+     color: #42C0FB;
  }
 
 .right {
@@ -49,8 +49,8 @@ div.menu {
 }
 
 .menu table {
-    border-right: 1px solid #FFB000;
-    border-bottom: 1px solid #FFB000;
+    border-right: 1px solid #42C0FB;
+    border-bottom: 1px solid #42C0FB;
     border-spacing: 0;
     text-align: center;
 }
@@ -69,7 +69,7 @@ div.menu {
 
 .menu table td div.highlight {
     color: black;
-    background-color: #FFB000;
+    background-color: #42C0FB;
 }
 
 .menu table td div.menucursor {
@@ -79,7 +79,7 @@ div.menu {
 
 
 .menu table td div.navigation {
-    color: #FFB000;
+    color: #42C0FB;
 }
 
 .menu table td div.disabled {

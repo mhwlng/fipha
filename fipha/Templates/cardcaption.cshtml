@@ -8,7 +8,9 @@
 }
 
 <div class="main">
-
+    
+    @if (Model.CurrentTab == LcdTab.NowPlaying)
+    {
         <div class="cardcaption">@Model.PlayerName</div>
-
+    }
 </div>
