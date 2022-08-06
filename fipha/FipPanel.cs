@@ -94,7 +94,8 @@ namespace fipha
         private LcdPage _currentPage = LcdPage.Collapsed;
         private LcdTab _currentTabCursor = LcdTab.None;
         private LcdTab _lastTab = LcdTab.Init;
-  
+        private string _settingsPath;
+
         private const int DEFAULT_PAGE = 0;
 
         private int _currentLcdYOffset;
@@ -138,12 +139,39 @@ namespace fipha
 
         private bool _blockNextUpState;
 
+        private string _exePath;
 
         public FipPanel(IntPtr devicePtr) 
         {
             FipDevicePointer = devicePtr;
         }
-        
+
+        private void InitFipPanelSerialNumber()
+        {
+            App.Log.Info("FipPanel Serial Number : " + SerialNumber);
+
+            _settingsPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
+                            "\\mhwlng\\fip-ha\\" + SerialNumber;
+
+            if (File.Exists(_settingsPath))
+            {
+                try
+                {
+                    CurrentTab = (LcdTab)uint.Parse(File.ReadAllText(_settingsPath));
+                }
+                catch
+                {
+                    CurrentTab = LcdTab.None;
+                }
+            }
+            else
+            {
+                new FileInfo(_settingsPath).Directory?.Create();
+
+                File.WriteAllText(_settingsPath, ((int)CurrentTab).ToString());
+            }
+        }
+
         public void Initalize()
         {
             // FIP = 3e083cd8-6a37-4a58-80a8-3d6a2c07513e
@@ -172,7 +200,7 @@ namespace fipha
             }
             else
             {
-                App.Log.Info("FipPanel Serial Number : " + SerialNumber);
+                InitFipPanelSerialNumber();
 
                 _initOk = true;
 
@@ -218,6 +246,9 @@ namespace fipha
 
 
                 _currentLcdYOffset = 0;
+
+
+                File.WriteAllText(_settingsPath, ((int)CurrentTab).ToString());
 
             }
 
@@ -984,7 +1015,12 @@ namespace fipha
                         {
                             case LcdTab.NowPlaying:
 
-                                if (play && pause)
+                                var imageMenu = Image.FromFile(
+                                    Path.Combine(App.ExePath, "Templates\\images\\") +
+                                    "menu.png");
+                                graphics.DrawImage(imageMenu, HtmlWindowXOffset, 0);
+
+                                    if (play && pause)
                                 {
                                     if (currentMediaPlayerState != "playing")
                                     {

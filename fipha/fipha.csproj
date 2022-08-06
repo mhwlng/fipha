@@ -225,6 +225,9 @@
     <Content Include="Templates\images\media-step-forward-24.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Templates\images\menu.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Templates\images\pause-3-24.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
