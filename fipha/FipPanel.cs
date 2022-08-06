@@ -139,8 +139,6 @@ namespace fipha
 
         private bool _blockNextUpState;
 
-        private string _exePath;
-
         public FipPanel(IntPtr devicePtr) 
         {
             FipDevicePointer = devicePtr;

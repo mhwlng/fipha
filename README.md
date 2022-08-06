@@ -7,6 +7,8 @@ Now Playing Display for Logitech Flight Instrument Panel for Home Assistant Medi
 
 The S1 button opens the menu.
 
+The last selected menu option is reloaded at startup.
+
 Use the right rotary encoder to scroll vertically.
 
 On the now playing screen :
