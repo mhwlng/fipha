@@ -5,7 +5,7 @@ Home Assistant integration with [Logitech Flight Instrument Panel](https://www.l
 - Now Playing Display for Home Assistant Media Players
 - [HWInfo](https://www.hwinfo.com) integration into Home Assistant, via MQTT
 
-If only the HWINFO integration with Home Assistant is needed, then NO Flight Instrument Panel needs to be connected.
+If only the HWINFO integration with Home Assistant is needed, then NO Flight Instrument Panel needs to be connected and no drivers need to be installed.
 
 If only the Now Playing Display is required, then no HWINFO or MQTT server needs to be set-up or running (in that case, remove mqtt.config).
 
@@ -42,6 +42,16 @@ Also players that should be excluded can be defined
 </appSettings>
 ```
 
+Works with these 64 bit Logitech Flight Instrument Panel Drivers (currently not with older saitek drivers) :
+
+https://support.logi.com/hc/en-us/articles/360024848713--Downloads-Flight-Instrument-Panel
+
+Software Version: 8.0.134.0
+Last Update: 2018-01-05
+64-bit
+
+https://download01.logi.com/web/ftp/pub/techsupport/simulation/Flight_Instrument_Panel_x64_Drivers_8.0.134.0.exe
+
 # HWINFO
 
 When HWInfo64 is detected, ALL the available sensors will be written at startup to the data\hwinfo.json file.
@@ -77,14 +87,4 @@ The HWINFO sensor data can be sent to an MQTT server that is configured in mqtt.
 ![MQTT3](https://i.imgur.com/AJBazTy.png)
 
 ![MQTT4](https://i.imgur.com/tkaNJDd.png)
-
-Works with these 64 bit Logitech Flight Instrument Panel Drivers (currently not with older saitek drivers) :
-
-https://support.logi.com/hc/en-us/articles/360024848713--Downloads-Flight-Instrument-Panel
-
-Software Version: 8.0.134.0
-Last Update: 2018-01-05
-64-bit
-
-https://download01.logi.com/web/ftp/pub/techsupport/simulation/Flight_Instrument_Panel_x64_Drivers_8.0.134.0.exe
 
