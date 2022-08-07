@@ -1,6 +1,6 @@
 # fip-ha
 
-Home Assistant integration with Logitech Flight Instrument Panel, HWINFO, MQTT
+Home Assistant integration with [Logitech Flight Instrument Panel](https://www.logitechg.com/en-us/products/flight/flight-simulator-instrument-panel.945-000027.html), HWINFO, MQTT
 
 - Now Playing Display for Home Assistant Media Players
 - [HWInfo](https://www.hwinfo.com) integration into Home Assistant, via MQTT
