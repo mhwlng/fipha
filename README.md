@@ -1,7 +1,17 @@
 # fip-ha
 
-Now Playing Display for Logitech Flight Instrument Panel for Home Assistant Media Players
+Home Assistant integration with Logitech Flight Instrument Panel, HWINFO, MQTT
 
+- Now Playing Display for Home Assistant Media Players
+- [HWInfo](https://www.hwinfo.com) integration into Home Assistant, via MQTT
+
+If only the HWINFO integration with Home Assistant is needed, then NO Flight Instrument Panel needs to to be connected.
+
+If only the Now Playing Display is required, then no HWINFO or MQTT server needs to be set-up or running (in that case, remove mqtt.config).
+
+HWINFO Sensor Entities will be AUTOMATICALLY added to Home Assistant via the MQTT Discovery process.
+
+# Now Playing
 
 ![Screenshot 1](https://i.imgur.com/UNOTXH2.jpeg)
 
@@ -31,6 +41,42 @@ Also players that should be excluded can be defined
   <add key="excludePlayers" value ="media_player.nvidia_shield,media_player.shield_cast,media_player.everywhere,media_player.bedroom_dot,media_player.livingroom_dot"/>
 </appSettings>
 ```
+
+# HWINFO
+
+When HWInfo64 is detected, ALL the available sensors will be written at startup to the data\hwinfo.json file.
+
+The HWINFO.inc file must be modified, to configure what will be sent to MQTT.
+The HWINFO.inc file has the same format as used by various [rainmeter](https://www.deviantart.com/pul53dr1v3r/art/Rainformer-2-9-3-HWiNFO-Edition-Rainmeter-789616481) skins.
+
+Note that you don't need to install rainmeter or any rainmeter plugin.
+
+A configuration tool, to link sensor ids to variables in the HWINFO.inc file, can be downloaded from the hwinfo website [here](https://www.hwinfo.com/beta/HWiNFOSharedMemoryViewer.exe.7z) :
+
+![hwinfo tool](https://i.imgur.com/Px6jvw4.png)
+
+The HWINFO sensor data can be sent to an MQTT server that is configured in mqtt.config (this file can be deleted if MQTT is not required)
+
+```
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <mqtt>
+    <add key="mqttURI" value="192.168.2.34" />
+    <add key="mqttUser" value="mqttusername" />
+    <add key="mqttPassword" value="secretpassword" />
+    <add key="mqttPort" value="1883" />
+    <add key="mqttSecure" value="False" />
+  </mqtt>
+</configuration>
+```
+
+![MQTT1](https://i.imgur.com/KackkpM.png)
+
+![MQTT2](https://i.imgur.com/p5S3FWw.png)
+
+![MQTT3](https://i.imgur.com/AJBazTy.png)
+
+![MQTT4](https://i.imgur.com/tkaNJDd.png)
 
 Works with these 64 bit Logitech Flight Instrument Panel Drivers (currently not with older saitek drivers) :
 

@@ -17,10 +17,13 @@ using TheArtOfDev.HtmlRenderer.Core;
 using SharpDX.DirectInput;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Documents;
 using HADotNet.Core;
 using HADotNet.Core.Clients;
 using HADotNet.Core.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 
 // ReSharper disable StringLiteralTypo
@@ -48,6 +51,9 @@ namespace fipha
         public static OrderedDictionary MediaPlayerStates = new OrderedDictionary();
         public static Task HaTask;
         private static CancellationTokenSource _haTokenSource = new CancellationTokenSource();
+
+        public static Task HWInfoTask;
+        private static CancellationTokenSource _hwInfoTokenSource = new CancellationTokenSource();
 
         private static Mutex _mutex;
 
@@ -80,8 +86,7 @@ namespace fipha
             process.Start();
             process.WaitForExit();
         }
-
-
+        
         protected override void OnStartup(StartupEventArgs evtArgs)
         {
             const string appName = "fipha";
@@ -162,7 +167,16 @@ namespace fipha
                 {
                     Log.Info($"{mediaPlayer}");
                 }
-                
+
+                splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting sensor data from HWInfo...");
+
+                HWInfo.ReadMem("HWINFO.INC");
+ 
+                if (HWInfo.SensorData.Any())
+                {
+                    HWInfo.SaveDataToFile(@"Data\hwinfo.json");
+                }
+
                 Dispatcher.Invoke(() =>
                 {
                     var window = Current.MainWindow = new MainWindow();
@@ -235,6 +249,79 @@ namespace fipha
 
                 }, haToken);
 
+                var hwInfoToken = _hwInfoTokenSource.Token;
+
+                if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")))
+                {
+
+                    HWInfoTask = Task.Run(async () =>
+                    {
+                        var result = await MQTT.Connect();
+
+                        Log.Info("HWInfo task started");
+
+                        if (HWInfo.SensorData.Any())
+                        {
+
+                            foreach (var sensor in HWInfo.SensorData)
+                            {
+                                foreach (var element in sensor.Value.Elements)
+                                {
+                                    var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTDiscoveryObj
+                                    {
+                                        device_class = element.Value.DeviceClass,
+                                        name = element.Value.Name,
+                                        state_topic =
+                                            $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
+                                        unit_of_measurement = element.Value.Unit,
+                                        value_template = "{{ value_json.value}}",
+                                        unique_id = element.Value.Node,
+                                        state_class = "measurement"
+                                    }, new JsonSerializerSettings
+                                    {
+                                        NullValueHandling = NullValueHandling.Ignore
+                                    });
+
+                                    var task = Task.Run<bool>(async () =>
+                                        await MQTT.Publish(
+                                            $"homeassistant/{element.Value.Component}/{element.Value.Node}/config",
+                                            mqttValue));
+
+                                }
+                            }
+
+                            while (true)
+                            {
+                                if (hwInfoToken.IsCancellationRequested)
+                                {
+                                    hwInfoToken.ThrowIfCancellationRequested();
+                                }
+
+                                HWInfo.ReadMem("HWINFO.INC");
+ 
+                                foreach (var sensor in HWInfo.SensorData)
+                                {
+                                    foreach (var element in sensor.Value.Elements)
+                                    {
+                                        var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTStateObj
+                                            {
+                                                value = element.Value.NumericValue
+                                            });
+
+                                        var task = Task.Run<bool>(async () => await MQTT.Publish($"homeassistant/{element.Value.Component}/{element.Value.Node}/state", mqttValue));
+                                    }
+
+                                }
+
+                                //!!!FipHandler.RefreshHWInfoPages();
+
+                                await Task.Delay(5 * 1000, _hwInfoTokenSource.Token); // repeat every 5 seconds
+                            }
+                        }
+
+                    }, hwInfoToken);
+                }
+
             });
 
         }
@@ -263,6 +350,24 @@ namespace fipha
                 _haTokenSource.Dispose();
             }
 
+
+
+            _hwInfoTokenSource.Cancel();
+
+            var hwInfoToken = _hwInfoTokenSource.Token;
+
+            try
+            {
+                HWInfoTask?.Wait(hwInfoToken);
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Info("HWINFO background task ended");
+            }
+            finally
+            {
+                _hwInfoTokenSource.Dispose();
+            }
 
             Log.Info("exiting");
 
