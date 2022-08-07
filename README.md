@@ -7,7 +7,7 @@ Home Assistant integration with [Logitech Flight Instrument Panel](https://www.l
 
 If only the HWINFO integration with Home Assistant is needed, then NO Flight Instrument Panel needs to be connected and no drivers need to be installed.
 
-If only the Now Playing Display is required, then no HWINFO or MQTT server needs to be set-up or running (in that case, remove mqtt.config).
+**If only the Now Playing Display is required, then no HWINFO or MQTT server needs to be set-up or running (in that case, remove mqtt.config).**
 
 HWINFO Sensor Entities will be AUTOMATICALLY added to Home Assistant via the MQTT Discovery process.
 
