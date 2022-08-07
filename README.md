@@ -54,6 +54,8 @@ https://download01.logi.com/web/ftp/pub/techsupport/simulation/Flight_Instrument
 
 # HWINFO
 
+The 'Shared Memory Support' setting in HWInfo must be enabled.
+
 When HWInfo64 is detected, ALL the available sensors will be written at startup to the data\hwinfo.json file.
 
 The HWINFO.inc file must be modified, to configure what will be sent to MQTT.
