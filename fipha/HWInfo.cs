@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using IniParser;
 using IniParser.Model;
+using log4net;
 using Newtonsoft.Json.Serialization;
 using Formatting = Newtonsoft.Json.Formatting;
 
@@ -142,7 +143,11 @@ namespace fipha
         public static Dictionary<string, ChartCircularBuffer> SensorTrends = new Dictionary<string, ChartCircularBuffer>();
 
         public static IniData IncData = null;
-        
+
+        public static readonly ILog Log =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+
         public static string NumberFormat(SENSOR_TYPE sensorType, string unit, double value)
         {
             string valstr = "?";
@@ -372,9 +377,9 @@ namespace fipha
                     ParseIncFile();
 
                 }
-                catch 
+                catch (Exception ex)
                 {
-                    // don nothing
+                    Log.Error("HWINFO Shared Memory Read Problem", ex);
                 }
             }
         }

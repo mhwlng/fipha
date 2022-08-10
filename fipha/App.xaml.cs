@@ -105,21 +105,30 @@ namespace fipha
 
             log4net.Config.XmlConfigurator.Configure();
 
-
-            if (File.Exists(Path.Combine(ExePath, "appSettings.config")) &&
-                ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
+            try
             {
-                HaUrl = appSection["haUrl"];
-                HaToken = appSection["haToken"];
-                ExcludePlayers = new HashSet<string>(appSection["excludePlayers"].Split(',').Select(p => p.ToLower().Trim()).ToList());
+
+                if (File.Exists(Path.Combine(ExePath, "appSettings.config")) &&
+                    ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
+                {
+                    HaUrl = appSection["haUrl"];
+                    HaToken = appSection["haToken"];
+                    ExcludePlayers = new HashSet<string>(appSection["excludePlayers"].Split(',')
+                        .Select(p => p.ToLower().Trim()).ToList());
+                }
+
+                ClientFactory.Initialize($"{HaUrl}", HaToken);
+
+                EntityClient = ClientFactory.GetClient<EntityClient>();
+
+                StatesClient = ClientFactory.GetClient<StatesClient>();
+
+            }
+            catch(Exception ex)
+            {
+                Log.Error("Connecting to Home Assistant Failed", ex);
             }
 
-            ClientFactory.Initialize($"{HaUrl}", HaToken);
-
-            EntityClient = ClientFactory.GetClient<EntityClient>();
-
-            StatesClient = ClientFactory.GetClient<StatesClient>();
-            
             //create the notifyicon (it's a resource declared in NotifyIconResources.xaml
             _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
 
@@ -160,12 +169,26 @@ namespace fipha
                 
                 splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting data from HA...");
 
-
-                MediaPlayers = (await EntityClient.GetEntities("media_player")).ToList();
-
-                foreach (var mediaPlayer in MediaPlayers)
+                if (EntityClient != null)
                 {
-                    Log.Info($"{mediaPlayer}");
+
+                    try
+                    {
+                        MediaPlayers = (await EntityClient.GetEntities("media_player")).ToList();
+
+                        foreach (var mediaPlayer in MediaPlayers)
+                        {
+                            Log.Info($"{mediaPlayer}");
+                        }
+                    }
+                    catch(Exception ex )
+                    {
+                        Log.Error("Finding Media Players",ex );
+                    }
+                }
+                else
+                {
+                    Log.Error("No Home Assistant Media Players Found");
                 }
 
                 splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting sensor data from HWInfo...");
@@ -174,7 +197,13 @@ namespace fipha
  
                 if (HWInfo.SensorData.Any())
                 {
+                    Log.Info("Writing HWINFO Sensors to hwinfo.json");
+
                     HWInfo.SaveDataToFile(@"Data\hwinfo.json");
+                }
+                else
+                {
+                    Log.Error("No HWINFO Sensors Found");
                 }
 
                 Dispatcher.Invoke(() =>
@@ -202,120 +231,138 @@ namespace fipha
                 
                 var haToken = _haTokenSource.Token;
 
-                HaTask = Task.Run(async () =>
+
+                if (MediaPlayers != null)
                 {
-                   
-                    Log.Info("HA task started");
-
-                    while (true)
+                    HaTask = Task.Run(async () =>
                     {
-                        if (haToken.IsCancellationRequested)
+
+                        Log.Info("HA task started");
+
+                        while (true)
                         {
-                            haToken.ThrowIfCancellationRequested();
-                        }
-
-                        for (var index = 0; index < App.MediaPlayers.Count; index++)
-                        {
-                            var mediaPlayer = App.MediaPlayers[index];
-
-                            var state = await App.StatesClient.GetState(mediaPlayer);
-
-                            if (!ExcludePlayers.Contains(mediaPlayer) && state != null && state.State != "off" && state.State != "standby" &&
-                                state.State != "unavailable"  && state.Attributes?.Any() == true /*&&
-                                state.Attributes.ContainsKey("media_content_id") && state.Attributes["media_content_id"] is long*/)
+                            if (haToken.IsCancellationRequested)
                             {
-                                if (MediaPlayerStates.Contains(mediaPlayer.ToLower()))
+                                haToken.ThrowIfCancellationRequested();
+                            }
+
+                            for (var index = 0; index < App.MediaPlayers.Count; index++)
+                            {
+                                var mediaPlayer = App.MediaPlayers[index];
+
+                                var state = await App.StatesClient.GetState(mediaPlayer);
+
+                                if (!ExcludePlayers.Contains(mediaPlayer) && state != null && state.State != "off" &&
+                                    state.State != "standby" &&
+                                    state.State != "unavailable" && state.Attributes?.Any() == true /*&&
+                                state.Attributes.ContainsKey("media_content_id") && state.Attributes["media_content_id"] is long*/
+                                   )
                                 {
-                                    MediaPlayerStates[mediaPlayer] = state;
+                                    if (MediaPlayerStates.Contains(mediaPlayer.ToLower()))
+                                    {
+                                        MediaPlayerStates[mediaPlayer] = state;
+                                    }
+                                    else
+                                    {
+                                        MediaPlayerStates.Add(mediaPlayer, state);
+                                    }
                                 }
                                 else
                                 {
-                                    MediaPlayerStates.Add(mediaPlayer, state);
+                                    if (MediaPlayerStates.Contains(mediaPlayer))
+                                    {
+                                        MediaPlayerStates.Remove(mediaPlayer);
+                                    }
                                 }
                             }
-                            else
-                            {
-                                if (MediaPlayerStates.Contains(mediaPlayer))
-                                {
-                                    MediaPlayerStates.Remove(mediaPlayer);
-                                }
-                            }
+
+                            FipHandler.RefreshHAPages();
+
+                            await Task.Delay(1000, _haTokenSource.Token); // repeat every 2 seconds
                         }
 
-                        FipHandler.RefreshHAPages();
-
-                        await Task.Delay(1000, _haTokenSource.Token); // repeat every 2 seconds
-                    }
-
-                }, haToken);
+                    }, haToken);
+                }
 
                 var hwInfoToken = _hwInfoTokenSource.Token;
 
-                if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")))
+                if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")) &&  HWInfo.SensorData.Any())
                 {
 
                     HWInfoTask = Task.Run(async () =>
                     {
                         var result = await MQTT.Connect();
-
-                        Log.Info("HWInfo task started");
-
-                        if (HWInfo.SensorData.Any())
+                        if (!result)
+                        {
+                            Log.Info("Failed to connect to MQTT server");
+                        }
+                        else
                         {
 
-                            foreach (var sensor in HWInfo.SensorData)
+
+
+                            Log.Info("HWInfo task started");
+
+                            if (HWInfo.SensorData.Any())
                             {
-                                foreach (var element in sensor.Value.Elements)
-                                {
-                                    var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTDiscoveryObj
-                                    {
-                                        device_class = element.Value.DeviceClass,
-                                        name = element.Value.Name,
-                                        state_topic =
-                                            $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
-                                        unit_of_measurement = element.Value.Unit,
-                                        value_template = "{{ value_json.value}}",
-                                        unique_id = element.Value.Node,
-                                        state_class = "measurement"
-                                    }, new JsonSerializerSettings
-                                    {
-                                        NullValueHandling = NullValueHandling.Ignore
-                                    });
 
-                                    var task = Task.Run<bool>(async () =>
-                                        await MQTT.Publish(
-                                            $"homeassistant/{element.Value.Component}/{element.Value.Node}/config",
-                                            mqttValue));
-
-                                }
-                            }
-
-                            while (true)
-                            {
-                                if (hwInfoToken.IsCancellationRequested)
-                                {
-                                    hwInfoToken.ThrowIfCancellationRequested();
-                                }
-
-                                HWInfo.ReadMem("HWINFO.INC");
- 
                                 foreach (var sensor in HWInfo.SensorData)
                                 {
                                     foreach (var element in sensor.Value.Elements)
                                     {
-                                        var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTStateObj
+                                        var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTDiscoveryObj
+                                        {
+                                            device_class = element.Value.DeviceClass,
+                                            name = element.Value.Name,
+                                            state_topic =
+                                                $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
+                                            unit_of_measurement = element.Value.Unit,
+                                            value_template = "{{ value_json.value}}",
+                                            unique_id = element.Value.Node,
+                                            state_class = "measurement"
+                                        }, new JsonSerializerSettings
+                                        {
+                                            NullValueHandling = NullValueHandling.Ignore
+                                        });
+
+                                        var task = Task.Run<bool>(async () =>
+                                            await MQTT.Publish(
+                                                $"homeassistant/{element.Value.Component}/{element.Value.Node}/config",
+                                                mqttValue));
+
+                                    }
+                                }
+
+                                while (true)
+                                {
+                                    if (hwInfoToken.IsCancellationRequested)
+                                    {
+                                        hwInfoToken.ThrowIfCancellationRequested();
+                                    }
+
+                                    HWInfo.ReadMem("HWINFO.INC");
+
+                                    foreach (var sensor in HWInfo.SensorData)
+                                    {
+                                        foreach (var element in sensor.Value.Elements)
+                                        {
+                                            var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTStateObj
                                             {
                                                 value = element.Value.NumericValue
                                             });
 
-                                        var task = Task.Run<bool>(async () => await MQTT.Publish($"homeassistant/{element.Value.Component}/{element.Value.Node}/state", mqttValue));
+                                            var task = Task.Run<bool>(async () =>
+                                                await MQTT.Publish(
+                                                    $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
+                                                    mqttValue));
+                                        }
+
                                     }
 
+                                    //!!!FipHandler.RefreshHWInfoPages();
+
+                                    await Task.Delay(5 * 1000, _hwInfoTokenSource.Token); // repeat every 5 seconds
                                 }
-
-                                //!!!FipHandler.RefreshHWInfoPages();
-
-                                await Task.Delay(5 * 1000, _hwInfoTokenSource.Token); // repeat every 5 seconds
                             }
                         }
 
