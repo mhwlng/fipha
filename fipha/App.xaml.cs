@@ -117,11 +117,18 @@ namespace fipha
                         .Select(p => p.ToLower().Trim()).ToList());
                 }
 
-                ClientFactory.Initialize($"{HaUrl}", HaToken);
+                if (!string.IsNullOrEmpty(HaUrl) && !string.IsNullOrEmpty(HaToken) &&
+                    HaUrl.ToLower().StartsWith("http") && !HaToken.Contains("..."))
+                {
 
-                EntityClient = ClientFactory.GetClient<EntityClient>();
+                    ClientFactory.Initialize($"{HaUrl}", HaToken);
 
-                StatesClient = ClientFactory.GetClient<StatesClient>();
+                    EntityClient = ClientFactory.GetClient<EntityClient>();
+
+                    StatesClient = ClientFactory.GetClient<StatesClient>();
+
+                    Log.Info("Connected to Home Assistant");
+                }
 
             }
             catch(Exception ex)
@@ -140,37 +147,37 @@ namespace fipha
 
             Task.Run(async () =>
             {
-                var config = new TemplateServiceConfiguration
+               
+                if (EntityClient != null)
                 {
-                    TemplateManager = new ResolvePathTemplateManager(new[] { Path.Combine(ExePath, "Templates") }),
-                    DisableTempFileLocking = true,
-                    BaseTemplateType = typeof(HtmlSupportTemplateBase<>) /*,
+                    var config = new TemplateServiceConfiguration
+                    {
+                        TemplateManager = new ResolvePathTemplateManager(new[] { Path.Combine(ExePath, "Templates") }),
+                        DisableTempFileLocking = true,
+                        BaseTemplateType = typeof(HtmlSupportTemplateBase<>) /*,
                     Namespaces = new HashSet<string>(){
                         "System",
                         "System.Linq",
                         "System.Collections",
                         "System.Collections.Generic"
                         }*/
-                };
+                    };
+                    splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Loading cshtml templates...");
 
-                splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Loading cshtml templates...");
+                    Engine.Razor = RazorEngineService.Create(config);
 
-                Engine.Razor = RazorEngineService.Create(config);
+                    Engine.Razor.Compile("init.cshtml", null);
+                    Engine.Razor.Compile("menu.cshtml", null);
+                    Engine.Razor.Compile("cardcaption.cshtml", null);
+                    Engine.Razor.Compile("layout.cshtml", null);
 
-                Engine.Razor.Compile("init.cshtml", null);
-                Engine.Razor.Compile("menu.cshtml", null);
-                Engine.Razor.Compile("cardcaption.cshtml", null);
-                Engine.Razor.Compile("layout.cshtml", null);
+                    Engine.Razor.Compile("nowplaying.cshtml", null);
 
-                Engine.Razor.Compile("nowplaying.cshtml", null);
+                    CssData = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.ParseStyleSheet(
+                        File.ReadAllText(Path.Combine(ExePath, "Templates\\styles.css")), true);
 
-                CssData = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.ParseStyleSheet(
-                    File.ReadAllText(Path.Combine(ExePath, "Templates\\styles.css")), true);
-                
-                splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting data from HA...");
+                    splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting data from HA...");
 
-                if (EntityClient != null)
-                {
 
                     try
                     {
@@ -188,7 +195,7 @@ namespace fipha
                 }
                 else
                 {
-                    Log.Error("No Home Assistant Media Players Found");
+                    Log.Error("No Home Assistant Connection");
                 }
 
                 splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting sensor data from HWInfo...");
@@ -197,7 +204,7 @@ namespace fipha
  
                 if (HWInfo.SensorData.Any())
                 {
-                    Log.Info("Writing HWINFO Sensors to hwinfo.json");
+                    Log.Info($"Writing { HWInfo.SensorData.Count} HWINFO Sensors to hwinfo.json");
 
                     HWInfo.SaveDataToFile(@"Data\hwinfo.json");
                 }
@@ -212,11 +219,13 @@ namespace fipha
                     window.ShowActivated = false;
                 });
 
-
-                splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Initializing FIP...");
-                if (!FipHandler.Initialize())
+                if (EntityClient != null)
                 {
-                    Current.Shutdown();
+                    splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Initializing FIP...");
+                    if (!FipHandler.Initialize())
+                    {
+                        Current.Shutdown();
+                    }
                 }
 
                 Log.Info("fipha started");
