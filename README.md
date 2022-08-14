@@ -3,11 +3,12 @@
 Home Assistant integration with [Logitech Flight Instrument Panel](https://www.logitechg.com/en-us/products/flight/flight-simulator-instrument-panel.945-000027.html), HWINFO, MQTT
 
 - Now Playing Display for Home Assistant Media Players
+- Sensor History Display
 - [HWInfo](https://www.hwinfo.com) integration into Home Assistant, via MQTT
 
 **If only the HWINFO integration with Home Assistant is needed, then NO Flight Instrument Panel needs to be connected and no drivers need to be installed. The haUrl / haToken keys in appsettings.config can be made empty to disable this feature.**
 
-If only the Now Playing Display is required, then no HWINFO or MQTT server needs to be set-up or running (in that case, remove mqtt.config).
+If only the Now Playing Display / Sensor History is required, then no HWINFO or MQTT server needs to be set-up or running (in that case, remove mqtt.config).
 
 HWINFO Sensor Entities will be AUTOMATICALLY added to Home Assistant via the MQTT Discovery process.
 
@@ -51,6 +52,64 @@ Last Update: 2018-01-05
 64-bit
 
 https://download01.logi.com/web/ftp/pub/techsupport/simulation/Flight_Instrument_Panel_x64_Drivers_8.0.134.0.exe
+
+
+# Sensor History
+
+Any (numeric value) sensor that has ![history integration](https://www.home-assistant.io/integrations/history/) enabled in home assistant, can be displayed on the flight instrument panel on up to 5 pages selected via a pop-up menu.
+
+![History1](https://i.imgur.com/arcd2Ve.png)
+
+![History2](https://i.imgur.com/ifRNKa6.png)
+
+Note that the HWINFO values are not used for this. The sensor history data is retrieved from Home Assistant.
+
+Everything is configured via the data\sensors.json file.
+
+```
+[
+  {
+    "menuName": "PC",
+    "captionName": "PC",
+    "sections": [
+      {
+        "name": "USAGE",
+        "sensors": [
+          {
+            "entityId": "sensor.dev5_usage_cpu"
+          },
+          {
+            "entityId": "sensor.dev5_usage_gpu"
+          }
+        ]
+      },
+      {
+        "name": "FAN SPEED",
+        "sensors": [
+          {
+            "entityId": "sensor.dev5_fan_speed_chipset"            
+          },
+          {
+            "entityId": "sensor.dev5_fan_speed_gpu"
+          }
+        ]
+      },
+  },
+]
+```
+
+Up to 5 pages can be defined.
+
+Each page has a menu name and a caption name.
+
+Each page can have any number of sections, each with a name. (If there is only one section, then no name is needed)
+
+Each section can have any number of sensors. The entityId from Home assistant is required. Also, a name can be defined. (otherwise the name from Home Assistant will be used)
+
+If the sensor value is non-numeric, or you don't want a chart, you can add "chart": false to only show the current value.
+
+By default the chart for the last 6 hours is displayed. This can be overruled per sensor via "chartMinutes": 360
+
 
 # HWINFO
 

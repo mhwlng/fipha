@@ -17,6 +17,7 @@ using RazorEngine.Templating;
 using RazorEngine.Text;
 using TheArtOfDev.HtmlRenderer.Core.Entities;
 using Image = System.Drawing.Image;
+using System.Globalization;
 
 // For extension methods.
 
@@ -32,7 +33,8 @@ namespace fipha
     {
         Collapsed = -1,
         HomeMenu = 0,
-      
+        SensorMenu = 1
+
     }
 
     public enum LcdTab
@@ -40,7 +42,18 @@ namespace fipha
         Init = -999,
         None = 0,
 
-        NowPlaying = 1
+        NowPlaying = 1,
+        SensorMenu = 2, // info ->
+
+        //---------------
+
+        SensorBack = 7,
+        SensorPage1 = 8,
+        SensorPage2 = 9,
+        SensorPage3 = 10,
+        SensorPage4 = 11,
+        SensorPage5 = 12
+
     }
 
     public class MyHtmlHelper
@@ -112,8 +125,9 @@ namespace fipha
 
         private readonly Pen _scrollPen = new Pen(Color.FromArgb(0xff,0xFF,0xB0,0x00));
         private readonly Pen _whitePen = new Pen(Color.FromArgb(0xff, 0xFF, 0xFF, 0xFF),(float)0.1);
-        
-        
+        private readonly Pen _grayPen = new Pen(Color.FromArgb(0xff, 0xd3, 0xd3, 0xd3), (float)0.1);
+
+
         private readonly SolidBrush _scrollBrush = new SolidBrush(Color.FromArgb(0xff, 0xFF, 0xB0, 0x00));
         private readonly SolidBrush _whiteBrush = new SolidBrush(Color.FromArgb(0xff, 0xFF, 0xFF, 0xFF));
 
@@ -127,12 +141,16 @@ namespace fipha
         private const int HtmlMenuWindowHeight = 259;
         private const int HtmlWindowXOffset = 1;
 
-        private int _htmlWindowWidth = 320;
-        private int _htmlWindowHeight = 240;
+        private const int HtmlWindowWidth = 320;
+        private const int HtmlWindowHeight = 240;
 
-        private int HtmlWindowUsableWidth => _htmlWindowWidth - 9 - HtmlWindowXOffset;
+        private int HtmlWindowUsableWidth => HtmlWindowWidth - 9 - HtmlWindowXOffset;
 
-        private double ScrollBarHeight => _htmlWindowHeight -7.0;
+        private double ScrollBarHeight => HtmlWindowHeight -7.0;
+
+        public static int ChartImageDisplayWidth => HtmlWindowWidth - 25;
+
+        public const int ChartImageDisplayHeight = 60;
 
         private DirectOutputClass.PageCallback _pageCallbackDelegate;
         private DirectOutputClass.SoftButtonCallback _softButtonCallbackDelegate;
@@ -515,6 +533,41 @@ namespace fipha
                                     case 32:
                                         mustRefresh = SetTab(LcdTab.NowPlaying);
                                         break;
+                                    case 64:
+                                        mustRefresh = true;
+                                        _currentPage = LcdPage.SensorMenu;
+                                        _lastTab = LcdTab.Init;
+                                        break;
+                                }
+                            }
+
+                            break;
+                        case LcdPage.SensorMenu:
+                            if (state)
+                            {
+                                switch (button)
+                                {
+                                    case 32:
+                                        mustRefresh = true;
+                                        _currentPage = LcdPage.HomeMenu;
+                                        _lastTab = LcdTab.Init;
+                                      
+                                        break;
+                                    default:
+
+                                        int i = 1, pos = 1;
+                                        while ((i & button) == 0)
+                                        {
+                                            i = i << 1;
+                                            ++pos;
+                                        }
+
+                                        if (pos - 7 < App.SensorPages.Count)
+                                        {
+                                            mustRefresh = SetTab((LcdTab)(pos + 1));
+                                        }
+
+                                        break;
                                 }
                             }
 
@@ -534,14 +587,14 @@ namespace fipha
 
         private void CheckLcdOffset()
         {
-            if (_currentLcdHeight <= _htmlWindowHeight)
+            if (_currentLcdHeight <= HtmlWindowHeight)
             {
                 _currentLcdYOffset = 0;
             }
 
-            if (_currentLcdYOffset + _htmlWindowHeight > _currentLcdHeight )
+            if (_currentLcdYOffset + HtmlWindowHeight > _currentLcdHeight )
             {
-                _currentLcdYOffset = _currentLcdHeight - _htmlWindowHeight + 4;
+                _currentLcdYOffset = _currentLcdHeight - HtmlWindowHeight + 4;
             }
 
             if (_currentLcdYOffset < 0) _currentLcdYOffset = 0;
@@ -608,10 +661,57 @@ namespace fipha
 
             return ReturnValues.E_FAIL;
         }
-        
+
         private void OnImageLoad(object sender, HtmlImageLoadEventArgs e)
         {
-            if (e.Src.StartsWith("background."))
+            if (e.Src.StartsWith("chart"))
+            {
+                try
+                {
+                    var image = new Bitmap(ChartImageDisplayWidth, ChartImageDisplayHeight);
+
+                    var sensorinfo = e.Src.Replace("chart","").Split('~');
+
+                    var page = App.SensorPages[Convert.ToInt32(sensorinfo[0])];
+
+                    foreach (var s in page.Sections)
+                    {
+                        var sensor = s.Sensors?.FirstOrDefault(x => x.EntityId == sensorinfo[1]);
+
+                        if (sensor != null && sensor.HistoryList?.Count > 0)
+                        {
+                            using (var graphics = Graphics.FromImage(image))
+                            {
+                                graphics.DrawLines(_scrollPen, sensor.Points );
+
+                                graphics.DrawRectangle(_grayPen,
+                                    new Rectangle(0, 0, ChartImageDisplayWidth - 1, ChartImageDisplayHeight - 1));
+
+                                if (sensor.MinVString != sensor.MaxVString)
+                                {
+                                    graphics.DrawString(sensor.MaxVString, _drawFont, _whiteBrush, (float)1, (float)1);
+
+
+                                    graphics.DrawString(sensor.MinVString, _drawFont, _whiteBrush, (float)1,
+                                        (float)ChartImageDisplayHeight - 17);
+                                }
+                            }
+
+                            break;
+                        }
+                    }
+
+                    e.Callback(image);
+
+                }
+                catch
+                {
+                    var image = new Bitmap(1, 1);
+
+                    e.Callback(image);
+                }
+            } 
+            else if (e.Src.StartsWith("background."))
             {
                 try
                 {
@@ -687,7 +787,7 @@ namespace fipha
 
             lock (_refreshDevicePageLock)
             {
-                using (var fipImage = new Bitmap(_htmlWindowWidth, _htmlWindowHeight))
+                using (var fipImage = new Bitmap(HtmlWindowWidth, HtmlWindowHeight))
                 {
                     using (var graphics = Graphics.FromImage(fipImage))
                     {
@@ -711,6 +811,16 @@ namespace fipha
 
                         switch (CurrentTab)
                         {
+                            case LcdTab.SensorPage1:
+                            case LcdTab.SensorPage2:
+                            case LcdTab.SensorPage3:
+                            case LcdTab.SensorPage4:
+                            case LcdTab.SensorPage5:
+                                if ((int)CurrentTab > App.SensorPages.Count + 7)
+                                {
+                                    CurrentTab = LcdTab.SensorPage1;
+                                }
+                                break;
                             case LcdTab.NowPlaying:
 
                                 CheckCardSelectionLimits(App.MediaPlayerStates.Count - 1);
@@ -898,7 +1008,6 @@ namespace fipha
                         {
                             try
                             {
-
                                 switch (CurrentTab)
                                 {
                                     case LcdTab.None:
@@ -929,6 +1038,28 @@ namespace fipha
                                                 PictureUrl = currentMediaPlayerPicture,
                                                 Season = currentMediaPlayerSeason,
                                                 Episode = currentMediaPlayerEpisode
+
+                                            });
+                                        break;
+                                    case LcdTab.SensorPage1:
+                                    case LcdTab.SensorPage2:
+                                    case LcdTab.SensorPage3:
+                                    case LcdTab.SensorPage4:
+                                    case LcdTab.SensorPage5:
+
+                                        str =
+                                            Engine.Razor.Run("sensors.cshtml", null, new
+                                            {
+                                                CurrentTab = CurrentTab,
+                                                CurrentPage = _currentPage,
+                                                CurrentCard = CurrentCard[(int)CurrentTab],
+
+                                                ChartImageDisplayWidth = ChartImageDisplayWidth,
+                                                ChartImageDisplayHeight = ChartImageDisplayHeight,
+
+                                                PageIndex = (int)CurrentTab - 8,
+
+                                                Page = App.SensorPages[(int)CurrentTab - 8]
 
                                             });
                                         break;
@@ -965,22 +1096,22 @@ namespace fipha
                             if (_htmlImage != null)
                             {
                                 graphics.DrawImage(_htmlImage, new Rectangle(new Point(HtmlWindowXOffset, 0),
-                                        new Size(HtmlWindowUsableWidth, _htmlWindowHeight + 20)),
+                                        new Size(HtmlWindowUsableWidth, HtmlWindowHeight + 20)),
                                     new Rectangle(new Point(0, _currentLcdYOffset),
-                                        new Size(HtmlWindowUsableWidth, _htmlWindowHeight + 20)),
+                                        new Size(HtmlWindowUsableWidth, HtmlWindowHeight + 20)),
                                     GraphicsUnit.Pixel);
                             }
                         }
 
-                        if (_currentLcdHeight > _htmlWindowHeight)
+                        if (_currentLcdHeight > HtmlWindowHeight)
                         {
-                            var scrollThumbHeight = _htmlWindowHeight / (double)_currentLcdHeight * ScrollBarHeight;
+                            var scrollThumbHeight = HtmlWindowHeight / (double)_currentLcdHeight * ScrollBarHeight;
                             var scrollThumbYOffset = _currentLcdYOffset / (double)_currentLcdHeight * ScrollBarHeight;
 
-                            graphics.DrawRectangle(_scrollPen, new Rectangle(new Point(_htmlWindowWidth - 9, 2),
+                            graphics.DrawRectangle(_scrollPen, new Rectangle(new Point(HtmlWindowWidth - 9, 2),
                                                                new Size(5, (int)ScrollBarHeight)));
 
-                            graphics.FillRectangle(_scrollBrush, new Rectangle(new Point(_htmlWindowWidth - 9, 2 + (int)scrollThumbYOffset),
+                            graphics.FillRectangle(_scrollBrush, new Rectangle(new Point(HtmlWindowWidth - 9, 2 + (int)scrollThumbYOffset),
                                 new Size(5, 1 + (int)scrollThumbHeight)));
 
                         }
@@ -1011,14 +1142,27 @@ namespace fipha
                         
                         switch (CurrentTab)
                         {
-                            case LcdTab.NowPlaying:
+                            case LcdTab.SensorPage1:
+                            case LcdTab.SensorPage2:
+                            case LcdTab.SensorPage3:
+                            case LcdTab.SensorPage4:
+                            case LcdTab.SensorPage5:
 
                                 var imageMenu = Image.FromFile(
                                     Path.Combine(App.ExePath, "Templates\\images\\") +
                                     "menu.png");
                                 graphics.DrawImage(imageMenu, HtmlWindowXOffset, 0);
 
-                                    if (play && pause)
+                                break;
+
+                            case LcdTab.NowPlaying:
+
+                                var imageMenu2 = Image.FromFile(
+                                    Path.Combine(App.ExePath, "Templates\\images\\") +
+                                    "menu.png");
+                                graphics.DrawImage(imageMenu2, HtmlWindowXOffset, 0);
+
+                                if (play && pause)
                                 {
                                     if (currentMediaPlayerState != "playing")
                                     {
@@ -1092,6 +1236,9 @@ namespace fipha
                             }
                         }
 
+#if DEBUG
+                        fipImage.Save("screenshot" + SerialNumber + "_" + (int)CurrentTab + "_" + CurrentCard[(int)CurrentTab] + ".png", ImageFormat.Png);
+#endif
                         SendImageToFip(DEFAULT_PAGE, fipImage);
 
                         if (_initOk)
@@ -1102,6 +1249,19 @@ namespace fipha
 
                                 switch (CurrentTab)
                                 {
+                                    case LcdTab.SensorPage1:
+                                    case LcdTab.SensorPage2:
+                                    case LcdTab.SensorPage3:
+                                    case LcdTab.SensorPage4:
+                                    case LcdTab.SensorPage5:
+                                        SetLed(2, false);
+                                        SetLed(3, false);
+                                        SetLed(4, false);
+                                        SetLed(5, false);
+                                        SetLed(6, false);
+
+                                        break;
+
                                     case LcdTab.NowPlaying:
 
                                         SetLed(2, play && pause);
@@ -1128,7 +1288,9 @@ namespace fipha
                             {
                                 for (uint i = 1; i <= 6; i++)
                                 {
-                                    if (_currentPage == LcdPage.HomeMenu && i > 1)
+                                    if (_currentPage == LcdPage.SensorMenu && i > 1+ App.SensorPages.Count)
+                                        SetLed(i, false);
+                                    else if (_currentPage == LcdPage.HomeMenu && i > 2)
                                         SetLed(i, false);
                                    
                                     else

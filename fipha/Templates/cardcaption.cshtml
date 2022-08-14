@@ -13,4 +13,10 @@
     {
         <div class="cardcaption">@Model.PlayerName</div>
     }
+    else if (Model.CurrentTab >= LcdTab.SensorPage1 && Model.CurrentTab <= LcdTab.SensorPage5)
+    {
+        var sensorPage = App.SensorPages[Model.CurrentTab - LcdTab.SensorPage1];
+
+        <div class="cardcaption">@sensorPage.CaptionName</div>
+    }
 </div>

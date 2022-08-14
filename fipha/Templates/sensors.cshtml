@@ -1,0 +1,66 @@
+@using System
+@using System.Collections.Generic
+@using fipha
+@using System.Linq
+@{
+    Layout = "layout.cshtml";
+}
+
+<div class="main">
+
+    <div class="cardcaption">&nbsp;</div>
+
+
+    @foreach (var m in Model.Page.Sections)
+    {
+        if (Model.Page.Sections.Count > 1)
+        {
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="caption center">@m.Name</td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+
+        foreach (var e in m.Sensors)
+        {
+            <table>
+                <tbody>
+                <tr>
+                    <td class="caption">@(e.Name ?? "" )</td>
+                    <td class="data right">@e.Value</td>
+                </tr>
+                </tbody>
+            </table>
+            if (e.Chart && e.Points != null)
+            {
+                <table>
+                    <tbody>
+                    <tr>
+                        <td><img src="@("chart" + Model.PageIndex.ToString() + "~" + e.EntityId)" width="@Model.ChartImageDisplayWidth" height="Model.ChartImageDisplayHeight"/></td>
+                    </tr>
+                    </tbody>
+                </table>
+            }
+        }
+
+        @*
+        if (!((List<SensorData.Section>)Model.Page.Sections).Last().Equals((SensorData.Section)m))
+        {
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="divider" >&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+        } *@
+
+
+
+    }
+
+
+</div>

@@ -1,6 +1,6 @@
 td.divider {
     font-size: 2px;
-    border-bottom: 1px solid #42C0FB;
+    border-bottom: 1px solid white;
 }
 
 .caption {
@@ -8,8 +8,8 @@ td.divider {
 }
 
 .data {
-     color: #42C0FB;
- }
+    color: lightgray;
+}
 
 .right {
     text-align: right;

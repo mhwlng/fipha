@@ -84,15 +84,40 @@ namespace fipha
             }
         }
 
-        public void RefreshHAPages()
+        public void RefreshHAMediaPlayerPages()
         {
             for (var index = 0; index < _fipPanels.Count; index++)
             {
                 var fipPanel = _fipPanels[index];
 
-                fipPanel.RefreshDevicePage();
+                switch (fipPanel.CurrentTab)
+                {
+                    case LcdTab.NowPlaying:
+
+                        fipPanel.RefreshDevicePage();
+                        break;
+                }
             }
-            
+        }
+
+        public void RefreshHASensorPages()
+        {
+            for (var index = 0; index < _fipPanels.Count; index++)
+            {
+                var fipPanel = _fipPanels[index];
+
+                switch (fipPanel.CurrentTab)
+                {
+                    case LcdTab.SensorPage1:
+                    case LcdTab.SensorPage2:
+                    case LcdTab.SensorPage3:
+                    case LcdTab.SensorPage4:
+                    case LcdTab.SensorPage5:
+
+                        fipPanel.RefreshDevicePage();
+                        break;
+                }
+            }
         }
 
         private bool IsFipDevice(IntPtr device)

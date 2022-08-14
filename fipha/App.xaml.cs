@@ -24,6 +24,8 @@ using HADotNet.Core.Clients;
 using HADotNet.Core.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using static fipha.SensorData;
+using System.Windows.Media;
 
 
 // ReSharper disable StringLiteralTypo
@@ -45,12 +47,19 @@ namespace fipha
 
         public static EntityClient EntityClient { get; set; }
         public static StatesClient StatesClient { get; set; }
+        public static HistoryClient HistoryClient { get; set; }
 
         public static List<string> MediaPlayers { get; set; }
 
+        public static List<string> Sensors { get; set; }
+        
         public static OrderedDictionary MediaPlayerStates = new OrderedDictionary();
-        public static Task HaTask;
-        private static CancellationTokenSource _haTokenSource = new CancellationTokenSource();
+
+        public static Task HaMediaPlayerTask;
+        private static CancellationTokenSource _haMediaPlayerTokenSource = new CancellationTokenSource();
+
+        public static Task HaSensorTask;
+        private static CancellationTokenSource _haSensorTokenSource = new CancellationTokenSource();
 
         public static Task HWInfoTask;
         private static CancellationTokenSource _hwInfoTokenSource = new CancellationTokenSource();
@@ -61,7 +70,7 @@ namespace fipha
 
         public static readonly FipHandler FipHandler = new FipHandler();
 
-
+        public static List<SensorPage> SensorPages = new List<SensorPage>();
 
 
         public static readonly ILog Log =
@@ -127,6 +136,8 @@ namespace fipha
 
                     StatesClient = ClientFactory.GetClient<StatesClient>();
 
+                    HistoryClient = ClientFactory.GetClient<HistoryClient>();
+
                     Log.Info("Connected to Home Assistant");
                 }
 
@@ -135,6 +146,8 @@ namespace fipha
             {
                 Log.Error("Connecting to Home Assistant Failed", ex);
             }
+
+            SensorPages = SensorData.GetSensors(@"Data\sensors.json");
 
             //create the notifyicon (it's a resource declared in NotifyIconResources.xaml
             _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
@@ -172,12 +185,21 @@ namespace fipha
                     Engine.Razor.Compile("layout.cshtml", null);
 
                     Engine.Razor.Compile("nowplaying.cshtml", null);
+                    Engine.Razor.Compile("sensors.cshtml", null);
 
                     CssData = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.ParseStyleSheet(
                         File.ReadAllText(Path.Combine(ExePath, "Templates\\styles.css")), true);
 
                     splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting data from HA...");
 
+                    try
+                    {
+                        Sensors = (await EntityClient.GetEntities("sensor")).ToList();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Finding Sensors", ex);
+                    }
 
                     try
                     {
@@ -238,21 +260,21 @@ namespace fipha
 
                 Dispatcher.Invoke(() => { splashScreen.Close(); });
                 
-                var haToken = _haTokenSource.Token;
+                var haMediaPlayerToken = _haMediaPlayerTokenSource.Token;
 
 
-                if (MediaPlayers != null)
+                if (EntityClient != null && MediaPlayers != null)
                 {
-                    HaTask = Task.Run(async () =>
+                    HaMediaPlayerTask = Task.Run(async () =>
                     {
 
-                        Log.Info("HA task started");
+                        Log.Info("HA Media Player task started");
 
                         while (true)
                         {
-                            if (haToken.IsCancellationRequested)
+                            if (haMediaPlayerToken.IsCancellationRequested)
                             {
-                                haToken.ThrowIfCancellationRequested();
+                                haMediaPlayerToken.ThrowIfCancellationRequested();
                             }
 
                             for (var index = 0; index < App.MediaPlayers.Count; index++)
@@ -285,12 +307,82 @@ namespace fipha
                                 }
                             }
 
-                            FipHandler.RefreshHAPages();
+                            FipHandler.RefreshHAMediaPlayerPages();
 
-                            await Task.Delay(1000, _haTokenSource.Token); // repeat every 2 seconds
+                            await Task.Delay(1000, _haMediaPlayerTokenSource.Token); // repeat every 2 seconds
                         }
 
-                    }, haToken);
+                    }, haMediaPlayerToken);
+                }
+
+                var haSensorToken = _haSensorTokenSource.Token;
+
+                if (EntityClient != null && Sensors?.Any() == true && SensorPages?.Any() == true)
+                {
+                    HaSensorTask = Task.Run(async () =>
+                    {
+
+                        Log.Info("HA Sensor task started");
+
+                        while (true)
+                        {
+                            if (haSensorToken.IsCancellationRequested)
+                            {
+                                haSensorToken.ThrowIfCancellationRequested();
+                            }
+
+                            foreach (var page in SensorPages)
+                            {
+                                foreach (var section in page.Sections)
+                                {
+                                    foreach (var sensor in section.Sensors)
+                                    {
+                                        if (Sensors.Contains(sensor.EntityId))
+                                        {
+                                            try
+                                            {
+                                                sensor.State = await App.StatesClient.GetState(sensor.EntityId);
+                                                if (sensor.State.Attributes?.Any() == true)
+                                                {
+                                                    sensor.Value = sensor.State.State;
+
+                                                    if (sensor.State.Attributes.ContainsKey("unit_of_measurement"))
+                                                    {
+                                                        sensor.Value += " " + (string)sensor.State.Attributes["unit_of_measurement"];
+                                                    }
+
+                                                    if (string.IsNullOrEmpty(sensor.Name) && sensor.State.Attributes.ContainsKey("friendly_name"))
+                                                    {
+                                                        sensor.Name = (string)sensor.State.Attributes["friendly_name"];
+                                                    }
+
+                                                    if (HistoryClient != null && sensor.Chart)
+                                                    {
+                                                        sensor.HistoryList = await HistoryClient.GetHistory(sensor.EntityId,
+                                                            DateTime.Now.AddMinutes(-sensor.ChartMinutes), DateTime.Now);
+
+                                                        (sensor.Points, sensor.MinVString, sensor.MaxVString) = HistoryToChart(sensor, FipPanel.ChartImageDisplayWidth, FipPanel.ChartImageDisplayHeight);
+
+                                                    }
+                                                }
+
+                                            }
+                                            catch
+                                            {
+                                                sensor.Value = "-";
+                                            }
+                                           
+                                        }
+                                    }
+                                }
+                            }
+
+                            FipHandler.RefreshHASensorPages();
+
+                            await Task.Delay(60000, _haSensorTokenSource.Token); // repeat every 60 seconds
+                        }
+
+                    }, haSensorToken);
                 }
 
                 var hwInfoToken = _hwInfoTokenSource.Token;
@@ -389,25 +481,40 @@ namespace fipha
 
             _notifyIcon.Dispose(); //the icon would clean up automatically, but this is cleaner
 
-            _haTokenSource.Cancel();
+            _haMediaPlayerTokenSource.Cancel();
 
-            var haToken = _haTokenSource.Token;
+            var haMediaPlayerToken = _haMediaPlayerTokenSource.Token;
 
             try
             {
-                HaTask?.Wait(haToken);
+                HaMediaPlayerTask?.Wait(haMediaPlayerToken);
             }
             catch (OperationCanceledException)
             {
-                Log.Info("HA background task ended");
+                Log.Info("HA Media Player background task ended");
             }
             finally
             {
-                _haTokenSource.Dispose();
+                _haMediaPlayerTokenSource.Dispose();
             }
 
+            _haSensorTokenSource.Cancel();
 
+            var haSensorToken = _haSensorTokenSource.Token;
 
+            try
+            {
+                HaSensorTask?.Wait(haSensorToken);
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Info("HA Sensor background task ended");
+            }
+            finally
+            {
+                _haSensorTokenSource.Dispose();
+            }
+            
             _hwInfoTokenSource.Cancel();
 
             var hwInfoToken = _hwInfoTokenSource.Token;

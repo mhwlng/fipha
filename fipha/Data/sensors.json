@@ -1,0 +1,156 @@
+[
+  {
+    "menuName": "PC",
+    "captionName": "PC",
+    "sections": [
+      {
+        "name": "TEMPERATURES",
+        "sensors": [
+          {
+            "entityId": "sensor.dev5_temperature_chipset"
+          },
+          {
+            "entityId": "sensor.dev5_temperature_cpu"
+          },
+          {
+            "entityId": "sensor.dev5_temperature_gpu"
+          },
+          {
+            "entityId": "sensor.dev5_temperature_motherboard"
+          },
+          {
+            "entityId": "sensor.dev5_temperature_ram"
+          },
+          {
+            "entityId": "sensor.dev5_temperature_ssd"
+          },
+          {
+            "entityId": "sensor.dev5_temperature_vrm"
+          }
+        ]
+      },
+      {
+        "name": "USAGE",
+        "sensors": [
+          {
+            "entityId": "sensor.dev5_usage_cpu"
+          },
+          {
+            "entityId": "sensor.dev5_usage_gpu"
+          }
+        ]
+      },
+      {
+        "name": "FAN SPEED",
+        "sensors": [
+          {
+            "entityId": "sensor.dev5_fan_speed_chipset"            
+          },
+          {
+            "entityId": "sensor.dev5_fan_speed_gpu"
+          }
+        ]
+      },
+      {
+        "name": "POWER",
+        "sensors": [
+          {
+            "entityId": "sensor.dev5_power_cpu"
+          },
+          {
+            "entityId": "sensor.dev5_power_gpu"
+          }
+        ]
+      },
+      {
+        "name": "FRAME RATE",
+        "sensors": [
+          {
+            "entityId": "sensor.dev5_frame_rate"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "menuName": "MAC",
+    "captionName": "Mac Mini",
+    "sections": [
+      {
+        "sensors": [
+          {
+            "entityId": "sensor.mac_pcore_temperature"
+          },
+          {
+            "entityId": "sensor.mac_cpu_percent"
+          },
+          {
+            "entityId": "sensor.mac_fanspeed"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "menuName": "PI",
+    "captionName": "Raspberry Pi",
+    "sections": [
+      {
+        "sensors": [
+          {
+            "entityId": "sensor.memory_use_percent"
+          },
+          {
+            "entityId": "sensor.processor_temperature"
+          },
+          {
+            "entityId": "sensor.last_boot",
+            "chart":  false
+          },
+          {
+            "entityId": "sensor.disk_use_percent"
+          },
+          {
+            "entityId": "sensor.processor_use_percent"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "menuName": "NAS",
+    "captionName": "Synology NAS",
+    "sections": [
+      {
+        "sensors": [
+          {
+            "entityId": "sensor.nas2_drive_1_temperature"
+          },
+          {
+            "entityId": "sensor.nas2_drive_1_status",
+            "chart": false
+          },
+          {
+            "entityId": "sensor.nas2_drive_2_temperature"
+          },
+          {
+            "entityId": "sensor.nas2_drive_2_status",
+            "chart": false
+          },
+          {
+            "entityId": "sensor.nas2_temperature"
+          },
+          {
+            "entityId": "sensor.nas2_cpu_utilization_total"
+          },
+          {
+            "entityId": "sensor.nas2_volume_1_volume_used"
+          },
+          {
+            "entityId": "sensor.nas2_memory_usage_real"
+          }
+        ]
+      }
+    ]
+  }
+]
