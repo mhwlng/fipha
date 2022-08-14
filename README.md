@@ -56,7 +56,7 @@ https://download01.logi.com/web/ftp/pub/techsupport/simulation/Flight_Instrument
 
 # Sensor History
 
-Any (numeric value) sensor that has [history integration](https://www.home-assistant.io/integrations/history/) enabled in home assistant, can be displayed on the flight instrument panel on up to 5 pages selected via a pop-up menu.
+Any (numeric value) sensor that has [history integration](https://www.home-assistant.io/integrations/history/) enabled in home assistant, can be displayed on the flight instrument panel, on up to 5 pages, selected via a pop-up menu.
 
 ![History1](https://i.imgur.com/arcd2Ve.png)
 
@@ -108,7 +108,7 @@ Each section can have any number of sensors. The entityId from Home assistant is
 
 If the sensor value is non-numeric, or you don't want a chart, you can add "chart": false to only show the current value.
 
-By default the chart for the last 6 hours is displayed. This can be overruled per sensor via "chartMinutes": 360
+By default the chart for the last 6 hours is displayed. This can be overruled, per sensor, via "chartMinutes": 360
 
 
 # HWINFO
