@@ -56,7 +56,7 @@ https://download01.logi.com/web/ftp/pub/techsupport/simulation/Flight_Instrument
 
 # Sensor History
 
-Any (numeric value) sensor that has ![history integration](https://www.home-assistant.io/integrations/history/) enabled in home assistant, can be displayed on the flight instrument panel on up to 5 pages selected via a pop-up menu.
+Any (numeric value) sensor that has [history integration](https://www.home-assistant.io/integrations/history/) enabled in home assistant, can be displayed on the flight instrument panel on up to 5 pages selected via a pop-up menu.
 
 ![History1](https://i.imgur.com/arcd2Ve.png)
 
