@@ -141,6 +141,7 @@
     <Compile Include="ChartCircularBuffer.cs" />
     <Compile Include="HWInfo.cs" />
     <Compile Include="Mqtt.cs" />
+    <Compile Include="NowPlayingData.cs" />
     <Compile Include="SensorData.cs" />
     <Compile Include="SplashScreenWindow.xaml.cs">
       <DependentUpon>SplashScreenWindow.xaml</DependentUpon>
@@ -177,6 +178,9 @@
     <None Include="app.config" />
     <None Include="app.manifest" />
     <None Include="appsettings.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Data\mediaplayers.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Data\sensors.json">

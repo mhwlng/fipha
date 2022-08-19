@@ -8,10 +8,12 @@
 }
 
 <div class="main">
-    
-    @if (Model.CurrentTab == LcdTab.NowPlaying)
+
+    @if (Model.CurrentTab >= LcdTab.NowPlayingPage1 && Model.CurrentTab <= LcdTab.NowPlayingPage5)
     {
-        <div class="cardcaption">@Model.PlayerName</div>
+        var nowPlayingPage = App.NowPlayingPages[Model.CurrentTab - LcdTab.NowPlayingPage1];
+
+        <div class="cardcaption">@nowPlayingPage.CaptionName</div>
     }
     else if (Model.CurrentTab >= LcdTab.SensorPage1 && Model.CurrentTab <= LcdTab.SensorPage5)
     {

@@ -1,0 +1,10 @@
+[
+  {
+    "menuName": "PC",
+    "entityId": "media_player.plex_plexamp_dev5"
+  },
+  {
+    "menuName": "MAC",
+    "entityId": "media_player.plex_plex_htpc_for_mac_mac_mini"
+  }
+]

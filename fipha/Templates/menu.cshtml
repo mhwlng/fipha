@@ -7,7 +7,7 @@
         <table class="menu">
             <tbody>
                 <tr>
-                    <td><div class="@(Model.CurrentTab == LcdTab.NowPlaying ? "highlight" : "") @(Model.Cursor == LcdTab.NowPlaying ? "menucursor" : "")">NOW PLAYING</div></td>
+                    <td><div class="navigation @(Model.Cursor == LcdTab.NowPlayingMenu ? "menucursor" : "")">PLAYING &#x25b6;</div></td>
                 </tr>
                 <tr>
                     <td><div class="navigation @(Model.Cursor == LcdTab.SensorMenu ? "menucursor" : "")">SENSORS &#x25b6;</div></td>
@@ -28,7 +28,36 @@
             </tbody>
         </table>
     }
-    @if (Model.CurrentPage == LcdPage.SensorMenu)
+    else if (Model.CurrentPage == LcdPage.NowPlayingMenu)
+    {
+        <table class="menu">
+            <tbody>
+            <tr>
+                <td><div class="navigation @(Model.Cursor == LcdTab.NowPlayingBack ? "menucursor" : "")">&#x25c0; BACK</div></td>
+            </tr>
+            @for (var index = 0; index < 5; index++)
+            {
+                if (index < App.NowPlayingPages.Count)
+                {
+                    var nowPlayingPage = App.NowPlayingPages[index];
+
+                    <tr>
+                        <td>
+                            <div class="@(Model.CurrentTab == LcdTab.NowPlayingPage1+index ? "highlight" : "") @(Model.Cursor == LcdTab.NowPlayingPage1+index ? "menucursor" : "")">@nowPlayingPage.MenuName</div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    <tr>
+                        <td><div class="disabled">&nbsp;</div></td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    }
+    else if (Model.CurrentPage == LcdPage.SensorMenu)
     {
         <table class="menu">
             <tbody>

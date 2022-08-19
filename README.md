@@ -22,16 +22,32 @@ The last selected menu option is reloaded at startup.
 
 Use the right rotary encoder to scroll vertically.
 
-On the now playing screen :
+Everything is configured via the data\mediaplayer.json file.
 
-Use the left rotary encoder to show another media player.
-Also, the S5 button shows the next media player and the S6 button shows the previous media player.
+```
+[
+  {
+    "menuName": "PC",
+    "entityId": "media_player.plex_plexamp_dev5"
+  },
+  {
+    "menuName": "MAC",
+    "entityId": "media_player.plex_plex_htpc_for_mac_mac_mini"
+  }
+]
+
+```
+
+Up to 5 media player pages can be defined.
+
+Each page has a menu name and a caption name. 
+If the captionName is not defined, then the name from Home Assistant will be used.
+
+On the now playing screen :
 
 When supported by the mediaplayer: S2,S3,S4 buttons will allow play/pause, next/previous track.
 
 edit appsettings.config with the Home Assistant URL and the Long-Lived Access Token that can be created in the profle screen in Home assistant.
-
-Also players that should be excluded can be defined
 
 ```
 <?xml version="1.0" encoding="utf-8" ?>
@@ -39,7 +55,6 @@ Also players that should be excluded can be defined
   <add key="EnableWindowsFormsHighDpiAutoResizing" value="false" />
   <add key="haUrl" value ="http://192.168.2.34:8123/" />
   <add key="haToken" value ="awsdfljhsdjkfhs...........3zFHM" />
-  <add key="excludePlayers" value ="media_player.nvidia_shield,media_player.shield_cast,media_player.everywhere,media_player.bedroom_dot,media_player.livingroom_dot"/>
 </appSettings>
 ```
 

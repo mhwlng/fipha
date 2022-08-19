@@ -25,6 +25,7 @@ using HADotNet.Core.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using static fipha.SensorData;
+using static fipha.NowPlayingData;
 using System.Windows.Media;
 
 
@@ -41,7 +42,6 @@ namespace fipha
 
         public static string HaUrl { get; set; }
         public static string HaToken { get; set; }
-        public static HashSet<string> ExcludePlayers { get; set; }
 
         public static bool IsShuttingDown { get; set; }
 
@@ -53,7 +53,6 @@ namespace fipha
 
         public static List<string> Sensors { get; set; }
         
-        public static OrderedDictionary MediaPlayerStates = new OrderedDictionary();
 
         public static Task HaMediaPlayerTask;
         private static CancellationTokenSource _haMediaPlayerTokenSource = new CancellationTokenSource();
@@ -72,6 +71,7 @@ namespace fipha
 
         public static List<SensorPage> SensorPages = new List<SensorPage>();
 
+        public static List<NowPlayingPage> NowPlayingPages = new List<NowPlayingPage>();
 
         public static readonly ILog Log =
             LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
@@ -122,8 +122,6 @@ namespace fipha
                 {
                     HaUrl = appSection["haUrl"];
                     HaToken = appSection["haToken"];
-                    ExcludePlayers = new HashSet<string>(appSection["excludePlayers"].Split(',')
-                        .Select(p => p.ToLower().Trim()).ToList());
                 }
 
                 if (!string.IsNullOrEmpty(HaUrl) && !string.IsNullOrEmpty(HaToken) &&
@@ -148,6 +146,8 @@ namespace fipha
             }
 
             SensorPages = SensorData.GetSensors(@"Data\sensors.json");
+
+            NowPlayingPages = NowPlayingData.GetMediaPlayers(@"Data\mediaplayers.json");
 
             //create the notifyicon (it's a resource declared in NotifyIconResources.xaml
             _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
@@ -277,32 +277,34 @@ namespace fipha
                                 haMediaPlayerToken.ThrowIfCancellationRequested();
                             }
 
-                            for (var index = 0; index < App.MediaPlayers.Count; index++)
+
+                            foreach (var page in NowPlayingPages)
                             {
-                                var mediaPlayer = App.MediaPlayers[index];
-
-                                var state = await App.StatesClient.GetState(mediaPlayer);
-
-                                if (!ExcludePlayers.Contains(mediaPlayer) && state != null && state.State != "off" &&
-                                    state.State != "standby" &&
-                                    state.State != "unavailable" && state.Attributes?.Any() == true /*&&
-                                state.Attributes.ContainsKey("media_content_id") && state.Attributes["media_content_id"] is long*/
-                                   )
+                                if (App.MediaPlayers.Contains(page.EntityId))
                                 {
-                                    if (MediaPlayerStates.Contains(mediaPlayer.ToLower()))
+                                    try
                                     {
-                                        MediaPlayerStates[mediaPlayer] = state;
+                                        page.State = await App.StatesClient.GetState(page.EntityId);
+
+                                        if (page?.State.Attributes?.Any() == true)
+                                        {
+                                            if (string.IsNullOrEmpty(page.CaptionName) &&
+                                                page.State.Attributes.ContainsKey("friendly_name"))
+                                            {
+                                                page.CaptionName = (string)page.State.Attributes["friendly_name"];
+                                            }
+                                        }
+
+                                        if (page.State == null || page.State.State == "off" ||
+                                            page.State.State == "standby" ||
+                                            page.State.State == "unavailable" || page.State.Attributes?.Any() != true)
+                                        {
+                                            page.State = null;
+                                        }
                                     }
-                                    else
+                                    catch
                                     {
-                                        MediaPlayerStates.Add(mediaPlayer, state);
-                                    }
-                                }
-                                else
-                                {
-                                    if (MediaPlayerStates.Contains(mediaPlayer))
-                                    {
-                                        MediaPlayerStates.Remove(mediaPlayer);
+                                        page.State = null;
                                     }
                                 }
                             }

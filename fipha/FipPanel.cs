@@ -33,8 +33,9 @@ namespace fipha
     {
         Collapsed = -1,
         HomeMenu = 0,
-        SensorMenu = 1
-
+        NowPlayingMenu = 1,
+        SensorMenu = 2
+        
     }
 
     public enum LcdTab
@@ -42,17 +43,26 @@ namespace fipha
         Init = -999,
         None = 0,
 
-        NowPlaying = 1,
-        SensorMenu = 2, // info ->
+        NowPlayingMenu = 1,
+        SensorMenu = 2, 
 
         //---------------
 
-        SensorBack = 7,
-        SensorPage1 = 8,
-        SensorPage2 = 9,
-        SensorPage3 = 10,
-        SensorPage4 = 11,
-        SensorPage5 = 12
+        NowPlayingBack = 7,
+        NowPlayingPage1 = 8,
+        NowPlayingPage2 = 9,
+        NowPlayingPage3 = 10,
+        NowPlayingPage4 = 11,
+        NowPlayingPage5 = 12,
+
+        //---------------
+
+        SensorBack = 13,
+        SensorPage1 = 14,
+        SensorPage2 = 15,
+        SensorPage3 = 16,
+        SensorPage4 = 17,
+        SensorPage5 = 18
 
     }
 
@@ -308,24 +318,40 @@ namespace fipha
                 var nextTrack = false;
                 var play = false;
 
-                if (App.MediaPlayerStates.Count > 0 && CurrentTab == LcdTab.NowPlaying)
+                switch (CurrentTab)
                 {
-                    var currentMediaPlayer = ((StateObject)(App.MediaPlayerStates[CurrentCard[(int)CurrentTab]]));
+                    case LcdTab.NowPlayingPage1:
+                    case LcdTab.NowPlayingPage2:
+                    case LcdTab.NowPlayingPage3:
+                    case LcdTab.NowPlayingPage4:
+                    case LcdTab.NowPlayingPage5:
 
-                    currentMediaPlayerState = currentMediaPlayer.State;
-                    currentMediaPlayerKey = currentMediaPlayer.EntityId;
+                        if ((int)CurrentTab - (int)LcdTab.NowPlayingPage1 < App.NowPlayingPages.Count)
+                        {
+                            var currentMediaPlayer =
+                                ((StateObject)(App.NowPlayingPages[(int)CurrentTab - (int)LcdTab.NowPlayingPage1])?.State);
 
-                    if (currentMediaPlayerState != "idle" && currentMediaPlayer.Attributes.ContainsKey("supported_features"))
-                    {
-                        var supportedFeatures = (long)currentMediaPlayer.Attributes["supported_features"];
+                            if (currentMediaPlayer != null)
+                            {
+                                currentMediaPlayerState = currentMediaPlayer.State;
+                                currentMediaPlayerKey = currentMediaPlayer.EntityId;
 
-                        pause = (supportedFeatures & PAUSE) > 0;
-                        previousTrack = (supportedFeatures & PREVIOUS_TRACK) > 0;
-                        nextTrack = (supportedFeatures & NEXT_TRACK) > 0;
-                        play = (supportedFeatures & PLAY) > 0;
+                                if (currentMediaPlayerState != "idle" &&
+                                    currentMediaPlayer.Attributes.ContainsKey("supported_features"))
+                                {
+                                    var supportedFeatures = (long)currentMediaPlayer.Attributes["supported_features"];
 
-                    }
+                                    pause = (supportedFeatures & PAUSE) > 0;
+                                    previousTrack = (supportedFeatures & PREVIOUS_TRACK) > 0;
+                                    nextTrack = (supportedFeatures & NEXT_TRACK) > 0;
+                                    play = (supportedFeatures & PLAY) > 0;
 
+                                }
+
+                            }
+                        }
+
+                        break;
                 }
 
                 switch (button)
@@ -333,15 +359,7 @@ namespace fipha
                     case 8: // scroll clockwise
                         if (state)
                         {
-                            switch (CurrentTab)
-                            {
-                                case LcdTab.NowPlaying:
-                                    CurrentCard[(int)CurrentTab]++;
-                                    _currentLcdYOffset = 0;
-
-                                    mustRefresh = true;
-                                    break;
-                            }
+                          
 
                         }
 
@@ -350,15 +368,7 @@ namespace fipha
 
                         if (state)
                         {
-                            switch (CurrentTab)
-                            {
-                                case LcdTab.NowPlaying:
-                                    CurrentCard[(int)CurrentTab]--;
-                                    _currentLcdYOffset = 0;
-
-                                    mustRefresh = true;
-                                    break;
-                            }
+                         
                         }
 
                         break;
@@ -412,7 +422,11 @@ namespace fipha
                                     case 64:
                                         switch (CurrentTab)
                                         {
-                                            case LcdTab.NowPlaying:
+                                            case LcdTab.NowPlayingPage1:
+                                            case LcdTab.NowPlayingPage2:
+                                            case LcdTab.NowPlayingPage3:
+                                            case LcdTab.NowPlayingPage4:
+                                            case LcdTab.NowPlayingPage5:
 
                                                 if (play && pause && !string.IsNullOrEmpty(currentMediaPlayerKey))
                                                 {
@@ -440,7 +454,11 @@ namespace fipha
 
                                         switch (CurrentTab)
                                         {
-                                            case LcdTab.NowPlaying:
+                                            case LcdTab.NowPlayingPage1:
+                                            case LcdTab.NowPlayingPage2:
+                                            case LcdTab.NowPlayingPage3:
+                                            case LcdTab.NowPlayingPage4:
+                                            case LcdTab.NowPlayingPage5:
 
                                                 if (nextTrack && !string.IsNullOrEmpty(currentMediaPlayerKey))
                                                 {
@@ -468,7 +486,11 @@ namespace fipha
 
                                         switch (CurrentTab)
                                         {
-                                            case LcdTab.NowPlaying:
+                                            case LcdTab.NowPlayingPage1:
+                                            case LcdTab.NowPlayingPage2:
+                                            case LcdTab.NowPlayingPage3:
+                                            case LcdTab.NowPlayingPage4:
+                                            case LcdTab.NowPlayingPage5:
 
                                                 if (previousTrack && !string.IsNullOrEmpty(currentMediaPlayerKey))
                                                 {
@@ -495,31 +517,9 @@ namespace fipha
                                         break;
                                     case 512:
 
-                                        switch (CurrentTab)
-                                        {
-                                            case LcdTab.NowPlaying:
-
-                                                CurrentCard[(int)CurrentTab]++;
-                                                _currentLcdYOffset = 0;
-
-                                                mustRefresh = true;
-                                                break;
-                                        }
-
-                                        break;
+                                         break;
                                     case 1024:
-
-                                        switch (CurrentTab)
-                                        {
-                                            case LcdTab.NowPlaying:
-
-                                                CurrentCard[(int)CurrentTab]--;
-                                                _currentLcdYOffset = 0;
-
-                                                mustRefresh = true;
-                                                break;
-                                        }
-
+                                        
                                         break;
                                 }
                             }
@@ -531,12 +531,46 @@ namespace fipha
                                 switch (button)
                                 {
                                     case 32:
-                                        mustRefresh = SetTab(LcdTab.NowPlaying);
+                                        mustRefresh = true;
+                                        _currentPage = LcdPage.NowPlayingMenu;
+                                        _lastTab = LcdTab.Init;
                                         break;
                                     case 64:
                                         mustRefresh = true;
                                         _currentPage = LcdPage.SensorMenu;
                                         _lastTab = LcdTab.Init;
+                                        break;
+                                }
+                            }
+
+                            break;
+
+
+                        case LcdPage.NowPlayingMenu:
+                            if (state)
+                            {
+                                switch (button)
+                                {
+                                    case 32:
+                                        mustRefresh = true;
+                                        _currentPage = LcdPage.HomeMenu;
+                                        _lastTab = LcdTab.Init;
+
+                                        break;
+                                    default:
+
+                                        int i = 1, pos = 1;
+                                        while ((i & button) == 0)
+                                        {
+                                            i = i << 1;
+                                            ++pos;
+                                        }
+                                        
+                                        if (pos - 7 < App.NowPlayingPages.Count)
+                                        {
+                                            mustRefresh = SetTab((LcdTab)(pos - 7 + LcdTab.NowPlayingPage1));
+                                        }
+                                 
                                         break;
                                 }
                             }
@@ -564,10 +598,10 @@ namespace fipha
 
                                         if (pos - 7 < App.SensorPages.Count)
                                         {
-                                            mustRefresh = SetTab((LcdTab)(pos + 1));
+                                            mustRefresh = SetTab((LcdTab)(pos - 7 + LcdTab.SensorPage1));
                                         }
-
                                         break;
+                                   
                                 }
                             }
 
@@ -678,11 +712,14 @@ namespace fipha
                     {
                         var sensor = s.Sensors?.FirstOrDefault(x => x.EntityId == sensorinfo[1]);
 
-                        if (sensor != null && sensor.HistoryList?.Count > 0)
+                        if (sensor != null)
                         {
                             using (var graphics = Graphics.FromImage(image))
                             {
-                                graphics.DrawLines(_scrollPen, sensor.Points );
+                                if (sensor.Points.Length > 0)
+                                {
+                                    graphics.DrawLines(_scrollPen, sensor.Points);
+                                }
 
                                 graphics.DrawRectangle(_grayPen,
                                     new Rectangle(0, 0, ChartImageDisplayWidth - 1, ChartImageDisplayHeight - 1));
@@ -706,8 +743,13 @@ namespace fipha
                 }
                 catch
                 {
-                    var image = new Bitmap(1, 1);
+                    var image = new Bitmap(ChartImageDisplayWidth, ChartImageDisplayHeight);
 
+                    using (var graphics = Graphics.FromImage(image))
+                    {
+                       graphics.DrawRectangle(_grayPen,
+                            new Rectangle(0, 0, ChartImageDisplayWidth - 1, ChartImageDisplayHeight - 1));
+                    }
                     e.Callback(image);
                 }
             } 
@@ -816,87 +858,99 @@ namespace fipha
                             case LcdTab.SensorPage3:
                             case LcdTab.SensorPage4:
                             case LcdTab.SensorPage5:
-                                if ((int)CurrentTab > App.SensorPages.Count + 7)
+                                if ((int)CurrentTab - (int)LcdTab.SensorPage1 >= App.SensorPages.Count)
                                 {
                                     CurrentTab = LcdTab.SensorPage1;
                                 }
                                 break;
-                            case LcdTab.NowPlaying:
+                            case LcdTab.NowPlayingPage1:
+                            case LcdTab.NowPlayingPage2:
+                            case LcdTab.NowPlayingPage3:
+                            case LcdTab.NowPlayingPage4:
+                            case LcdTab.NowPlayingPage5:
 
-                                CheckCardSelectionLimits(App.MediaPlayerStates.Count - 1);
+                                if ((int)CurrentTab - (int)LcdTab.NowPlayingPage1 >= App.NowPlayingPages.Count)
+                                {
+                                    CurrentTab = LcdTab.NowPlayingPage1;
+                                }
 
-                                if (App.MediaPlayerStates.Count > 0)
+                                if ((int)CurrentTab - (int)LcdTab.NowPlayingPage1 < App.NowPlayingPages.Count)
                                 {
                                     var currentMediaPlayer =
-                                        ((StateObject)(App.MediaPlayerStates[CurrentCard[(int)CurrentTab]]));
+                                        ((StateObject)(App.NowPlayingPages[(int)CurrentTab - (int)LcdTab.NowPlayingPage1])?.State);
 
-                                    if (currentMediaPlayer.Attributes.ContainsKey("friendly_name"))
+                                    if (currentMediaPlayer != null)
                                     {
-                                        currentMediaPlayerName = (string)currentMediaPlayer.Attributes["friendly_name"];
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("friendly_name"))
+                                        {
+                                            currentMediaPlayerName =
+                                                (string)currentMediaPlayer.Attributes["friendly_name"];
+                                        }
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("media_title"))
+                                        {
+                                            currentMediaPlayerTitle =
+                                                (string)currentMediaPlayer.Attributes["media_title"];
+                                        }
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("media_album_name"))
+                                        {
+                                            currentMediaPlayerAlbumName =
+                                                (string)currentMediaPlayer.Attributes["media_album_name"];
+                                        }
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("media_series_title"))
+                                        {
+                                            currentMediaPlayerSeriesName =
+                                                (string)currentMediaPlayer.Attributes["media_series_title"];
+                                        }
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("media_season"))
+                                        {
+                                            currentMediaPlayerSeason =
+                                                currentMediaPlayer.Attributes["media_season"].ToString();
+                                        }
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("media_episode"))
+                                        {
+                                            currentMediaPlayerEpisode =
+                                                (string)currentMediaPlayer.Attributes["media_episode"].ToString();
+                                        }
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("media_artist"))
+                                        {
+                                            currentMediaPlayerArtist =
+                                                (string)currentMediaPlayer.Attributes["media_artist"];
+                                        }
+                                        else if (currentMediaPlayer.Attributes.ContainsKey("media_album_artist"))
+                                        {
+                                            currentMediaPlayerArtist =
+                                                (string)currentMediaPlayer.Attributes["media_album_artist"];
+                                        }
+
+                                        if (currentMediaPlayer.Attributes.ContainsKey("entity_picture"))
+                                        {
+                                            currentMediaPlayerPicture = App.HaUrl.TrimEnd(new[] { '/', '\\' }) +
+                                                                        (string)currentMediaPlayer.Attributes[
+                                                                            "entity_picture"];
+                                        }
+
+                                        currentMediaPlayerState = currentMediaPlayer.State;
+
+                                        if (currentMediaPlayerState != "idle" &&
+                                            currentMediaPlayer.Attributes.ContainsKey("supported_features"))
+                                        {
+                                            var supportedFeatures =
+                                                (long)currentMediaPlayer.Attributes["supported_features"];
+
+                                            pause = (supportedFeatures & PAUSE) > 0;
+                                            previousTrack = (supportedFeatures & PREVIOUS_TRACK) > 0;
+                                            nextTrack = (supportedFeatures & NEXT_TRACK) > 0;
+                                            play = (supportedFeatures & PLAY) > 0;
+
+                                        }
                                     }
-
-                                    if (currentMediaPlayer.Attributes.ContainsKey("media_title"))
-                                    {
-                                        currentMediaPlayerTitle = (string)currentMediaPlayer.Attributes["media_title"];
-                                    }
-
-                                    if (currentMediaPlayer.Attributes.ContainsKey("media_album_name"))
-                                    {
-                                        currentMediaPlayerAlbumName =
-                                            (string)currentMediaPlayer.Attributes["media_album_name"];
-                                    }
-
-                                    if (currentMediaPlayer.Attributes.ContainsKey("media_series_title"))
-                                    {
-                                        currentMediaPlayerSeriesName =
-                                            (string)currentMediaPlayer.Attributes["media_series_title"];
-                                    }
-
-                                    if (currentMediaPlayer.Attributes.ContainsKey("media_season"))
-                                    {
-                                        currentMediaPlayerSeason =
-                                            currentMediaPlayer.Attributes["media_season"].ToString();
-                                    }
-
-                                    if (currentMediaPlayer.Attributes.ContainsKey("media_episode"))
-                                    {
-                                        currentMediaPlayerEpisode =
-                                            (string)currentMediaPlayer.Attributes["media_episode"].ToString();
-                                    }
-
-                                    if (currentMediaPlayer.Attributes.ContainsKey("media_artist"))
-                                    {
-                                        currentMediaPlayerArtist =
-                                            (string)currentMediaPlayer.Attributes["media_artist"];
-                                    }
-                                    else if (currentMediaPlayer.Attributes.ContainsKey("media_album_artist"))
-                                    {
-                                        currentMediaPlayerArtist =
-                                            (string)currentMediaPlayer.Attributes["media_album_artist"];
-                                    }
-
-                                    if (currentMediaPlayer.Attributes.ContainsKey("entity_picture"))
-                                    {
-                                        currentMediaPlayerPicture = App.HaUrl.TrimEnd(new[] { '/', '\\' }) +
-                                                                    (string)currentMediaPlayer.Attributes[
-                                                                        "entity_picture"];
-                                    }
-
-                                    currentMediaPlayerState = currentMediaPlayer.State;
-
-                                    if (currentMediaPlayerState != "idle" &&
-                                        currentMediaPlayer.Attributes.ContainsKey("supported_features"))
-                                    {
-                                        var supportedFeatures =
-                                            (long)currentMediaPlayer.Attributes["supported_features"];
-
-                                        pause = (supportedFeatures & PAUSE) > 0;
-                                        previousTrack = (supportedFeatures & PREVIOUS_TRACK) > 0;
-                                        nextTrack = (supportedFeatures & NEXT_TRACK) > 0;
-                                        play = (supportedFeatures & PLAY) > 0;
-
-                                    }
-
                                 }
 
                                 break;
@@ -1020,7 +1074,11 @@ namespace fipha
                                             });
 
                                         break;
-                                    case LcdTab.NowPlaying:
+                                    case LcdTab.NowPlayingPage1:
+                                    case LcdTab.NowPlayingPage2:
+                                    case LcdTab.NowPlayingPage3:
+                                    case LcdTab.NowPlayingPage4:
+                                    case LcdTab.NowPlayingPage5:
 
                                         str =
                                             Engine.Razor.Run("nowplaying.cshtml", null, new
@@ -1057,9 +1115,9 @@ namespace fipha
                                                 ChartImageDisplayWidth = ChartImageDisplayWidth,
                                                 ChartImageDisplayHeight = ChartImageDisplayHeight,
 
-                                                PageIndex = (int)CurrentTab - 8,
+                                                PageIndex = (int)CurrentTab - (int)LcdTab.SensorPage1,
 
-                                                Page = App.SensorPages[(int)CurrentTab - 8]
+                                                Page = App.SensorPages[(int)CurrentTab - (int)LcdTab.SensorPage1]
 
                                             });
                                         break;
@@ -1155,7 +1213,11 @@ namespace fipha
 
                                 break;
 
-                            case LcdTab.NowPlaying:
+                            case LcdTab.NowPlayingPage1:
+                            case LcdTab.NowPlayingPage2:
+                            case LcdTab.NowPlayingPage3:
+                            case LcdTab.NowPlayingPage4:
+                            case LcdTab.NowPlayingPage5:
 
                                 var imageMenu2 = Image.FromFile(
                                     Path.Combine(App.ExePath, "Templates\\images\\") +
@@ -1194,7 +1256,7 @@ namespace fipha
                                         "arrow-68-24.png");
                                     graphics.DrawImage(imagePrevious, HtmlWindowXOffset, 129);
                                 }
-
+                                /*
                                 if (App.MediaPlayerStates.Count > 1)
                                 {
                                     var imageNextPlayer = Image.FromFile(
@@ -1206,7 +1268,7 @@ namespace fipha
                                         Path.Combine(App.ExePath, "Templates\\images\\") +
                                         "arrow-92-24.png");
                                     graphics.DrawImage(imagePreviousPlayer, HtmlWindowXOffset, 212);
-                                }
+                                }*/
 
                                 break;
                         }
@@ -1237,7 +1299,7 @@ namespace fipha
                         }
 
 #if DEBUG
-                        fipImage.Save("screenshot" + SerialNumber + "_" + (int)CurrentTab + "_" + CurrentCard[(int)CurrentTab] + ".png", ImageFormat.Png);
+                        //fipImage.Save("screenshot" + SerialNumber + "_" + (int)CurrentTab + "_" + CurrentCard[(int)CurrentTab] + ".png", ImageFormat.Png);
 #endif
                         SendImageToFip(DEFAULT_PAGE, fipImage);
 
@@ -1262,24 +1324,28 @@ namespace fipha
 
                                         break;
 
-                                    case LcdTab.NowPlaying:
+                                    case LcdTab.NowPlayingPage1:
+                                    case LcdTab.NowPlayingPage2:
+                                    case LcdTab.NowPlayingPage3:
+                                    case LcdTab.NowPlayingPage4:
+                                    case LcdTab.NowPlayingPage5:
 
                                         SetLed(2, play && pause);
                                         SetLed(3, nextTrack);
                                         SetLed(4, previousTrack);
 
-                                        if (App.MediaPlayerStates.Count <= 1)
-                                        {
+                                        //if (App.MediaPlayerStates.Count <= 1)
+                                        //{
                                             SetLed(5, false);
                                             SetLed(6, false);
 
-                                        }
+                                        /*}
                                         else
                                         {
                                             SetLed(5, true);
                                             SetLed(6, true);
                                             break;
-                                        }
+                                        }*/
 
                                         break;
                                 }
@@ -1289,6 +1355,8 @@ namespace fipha
                                 for (uint i = 1; i <= 6; i++)
                                 {
                                     if (_currentPage == LcdPage.SensorMenu && i > 1+ App.SensorPages.Count)
+                                        SetLed(i, false);
+                                    if (_currentPage == LcdPage.NowPlayingMenu && i > 1 + App.NowPlayingPages.Count)
                                         SetLed(i, false);
                                     else if (_currentPage == LcdPage.HomeMenu && i > 2)
                                         SetLed(i, false);

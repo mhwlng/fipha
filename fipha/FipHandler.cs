@@ -92,7 +92,11 @@ namespace fipha
 
                 switch (fipPanel.CurrentTab)
                 {
-                    case LcdTab.NowPlaying:
+                    case LcdTab.NowPlayingPage1:
+                    case LcdTab.NowPlayingPage2:
+                    case LcdTab.NowPlayingPage3:
+                    case LcdTab.NowPlayingPage4:
+                    case LcdTab.NowPlayingPage5:
 
                         fipPanel.RefreshDevicePage();
                         break;
