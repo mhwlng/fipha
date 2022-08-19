@@ -38,7 +38,7 @@ Everything is configured via the data\mediaplayer.json file.
 
 ```
 
-Up to 5 media player pages can be defined.
+Up to 5 media player pages can be defined, selected via a pop-up menu.
 
 Each page has a menu name and a caption name. 
 If the captionName is not defined, then the name from Home Assistant will be used.
