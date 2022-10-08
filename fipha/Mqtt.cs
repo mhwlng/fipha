@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using MQTTnet;
 using MQTTnet.Client;
+using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Protocol;
 
 namespace fipha
@@ -18,7 +19,7 @@ namespace fipha
     public static class MQTT
     {
         private static MqttFactory factory = new MqttFactory();
-        private static IMqttClient mqttClient = factory.CreateMqttClient();
+        private static IManagedMqttClient mqttClient = factory.CreateManagedMqttClient();
         private static  string ClientId = Guid.NewGuid().ToString();
 
         private static string mqttURI;
@@ -29,24 +30,41 @@ namespace fipha
 
         public static async Task<bool> Publish(string channel, string value)
         {
-            if (mqttClient.IsConnected == false)
-            {
-                return false;
-            }
-
             var message = new MqttApplicationMessageBuilder()
                     .WithTopic(channel)
                     .WithPayload(value)
-                    //.WithAtMostOnceQoS()
-                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce)
-                    //.WithRetainFlag()
+                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                    .WithRetainFlag()
                     .Build();
 
-            var result = await mqttClient.PublishAsync(message);
-            
-            return result.ReasonCode == MqttClientPublishReasonCode.Success;
+            try { 
+                await mqttClient.EnqueueAsync(message);
+            }
+            catch (Exception ex)
+            {
+                App.Log.Error($"MQTT Client : Enqueue Failed", ex);
+            }
+
+            return true;
         }
-        
+
+        private static void MqttOnConnectingFailed(ConnectingFailedEventArgs e)
+        {
+            App.Log.Error($"MQTT Client: Connection Failed", e.Exception);
+        }
+
+        private static void MqttOnConnected(MqttClientConnectedEventArgs e)
+        {
+
+            App.Log.Info($"MQTT Client: Connected with result: {e.ConnectResult?.ResultCode}");
+        }
+
+        private static void MqttOnDisconnected(MqttClientDisconnectedEventArgs e)
+        {
+
+            App.Log.Error($"MQTT Client: Connection lost with reason: {e.Reason}.");
+        }
+
         public static async Task<bool> Connect()
         {
             if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")))
@@ -78,6 +96,7 @@ namespace fipha
             else return false;
 
             var messageBuilder = new MqttClientOptionsBuilder()
+              //.WithProtocolVersion(MqttProtocolVersion.V500)
               .WithClientId(ClientId)
               .WithCredentials(mqttUser, mqttPassword)
               .WithTcpServer(mqttURI, mqttPort)
@@ -90,24 +109,38 @@ namespace fipha
               : messageBuilder
                 .Build();
 
+            var managedOptions = new ManagedMqttClientOptionsBuilder()
+                .WithAutoReconnectDelay(TimeSpan.FromSeconds(30))
+                .WithClientOptions(options)
+                .Build();
+
             try
             {
-                var result = await mqttClient.ConnectAsync(options, CancellationToken.None);
-
-                if (result.ResultCode != MqttClientConnectResultCode.Success)
+                mqttClient.ConnectedAsync += e =>
                 {
-                    App.Log.Error($"MQTT CONNECT FAILED: {result.ResultCode} {result.ReasonString}");
-                }
+                    MqttOnConnected(e);
+                    return Task.CompletedTask;
+                };
+                mqttClient.DisconnectedAsync += e =>
+                {
+                    MqttOnDisconnected(e);
+                    return Task.CompletedTask;
+                };
+                mqttClient.ConnectingFailedAsync += e =>
+                {
+                    MqttOnConnectingFailed(e);
+                    return Task.CompletedTask;
+                };
 
-                return result.ResultCode == MqttClientConnectResultCode.Success;
+                await mqttClient.StartAsync(managedOptions);
+
             }
             catch (Exception ex)
             {
-                // ignore this exception
                 App.Log.Error($"MQTT CONNECT FAILED", ex);
             }
 
-            return false;
+            return true;
 
         }
 
