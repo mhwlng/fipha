@@ -22,11 +22,15 @@ namespace fipha
         private static IManagedMqttClient mqttClient = factory.CreateManagedMqttClient();
         private static  string ClientId = Guid.NewGuid().ToString();
 
-        private static string mqttURI;
-        private static string mqttUser;
-        private static string mqttPassword;
-        private static int mqttPort;
-        private static bool mqttSecure;
+        private static string _mqttUri;
+        private static string _mqttUser;
+        private static string _mqttPassword;
+        private static int _mqttPort;
+        private static bool _mqttSecure;
+        private static int _mqttPollingInterval;
+
+        public static int MqttPollingInterval => _mqttPollingInterval;
+
 
         public static async Task<bool> Publish(string channel, string value)
         {
@@ -65,6 +69,35 @@ namespace fipha
             App.Log.Error($"MQTT Client: Connection lost with reason: {e.Reason}.");
         }
 
+        public static void FillConfig()
+        {
+            if (!File.Exists(Path.Combine(App.ExePath, "mqtt.config"))) return;
+
+            var configMap = new ExeConfigurationFileMap
+                { ExeConfigFilename = Path.Combine(App.ExePath, "mqtt.config") };
+
+            var config =
+                ConfigurationManager.OpenMappedExeConfiguration(configMap, ConfigurationUserLevel.None);
+
+            var myParamsSection = config.GetSection("mqtt");
+
+            var myParamsSectionRawXml = myParamsSection.SectionInformation.GetRawXml();
+            var sectionXmlDoc = new XmlDocument();
+            sectionXmlDoc.Load(new StringReader(myParamsSectionRawXml));
+            var handler = new NameValueSectionHandler();
+
+            var appSection =
+                handler.Create(null, null, sectionXmlDoc.DocumentElement) as NameValueCollection;
+
+            _mqttUri = appSection["mqttURI"];
+            _mqttUser = appSection["mqttUser"];
+            _mqttPassword = appSection["mqttPassword"];
+            _mqttPort = Convert.ToInt32(appSection["mqttPort"]);
+            _mqttSecure = appSection["mqttSecure"] == "True";
+            _mqttPollingInterval = Convert.ToInt32(appSection["mqttPollingInterval"]);
+
+        }
+
         public static async Task<bool> Connect()
         {
             if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")))
@@ -85,24 +118,25 @@ namespace fipha
                 var appSection =
                     handler.Create(null, null, sectionXmlDoc.DocumentElement) as NameValueCollection;
 
-                mqttURI = appSection["mqttURI"];
-                mqttUser = appSection["mqttUser"];
-                mqttPassword = appSection["mqttPassword"];
-                mqttPort = Convert.ToInt32(appSection["mqttPort"]);
-                mqttSecure = appSection["mqttSecure"] == "True";
+                _mqttUri = appSection["mqttURI"];
+                _mqttUser = appSection["mqttUser"];
+                _mqttPassword = appSection["mqttPassword"];
+                _mqttPort = Convert.ToInt32(appSection["mqttPort"]);
+                _mqttSecure = appSection["mqttSecure"] == "True";
+                _mqttPollingInterval = Convert.ToInt32(appSection["mqttPollingInterval"]);
 
-                if (string.IsNullOrEmpty(mqttURI)) return false;
+                if (string.IsNullOrEmpty(_mqttUri)) return false;
             }
             else return false;
 
             var messageBuilder = new MqttClientOptionsBuilder()
               //.WithProtocolVersion(MqttProtocolVersion.V500)
               .WithClientId(ClientId)
-              .WithCredentials(mqttUser, mqttPassword)
-              .WithTcpServer(mqttURI, mqttPort)
+              .WithCredentials(_mqttUser, _mqttPassword)
+              .WithTcpServer(_mqttUri, _mqttPort)
               .WithCleanSession();
 
-            var options = mqttSecure
+            var options = _mqttSecure
               ? messageBuilder
                 .WithTls()
                 .Build()

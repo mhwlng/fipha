@@ -143,6 +143,8 @@ A configuration tool, to link sensor ids to variables in the HWINFO.inc file, ca
 
 The HWINFO sensor data can be sent to an MQTT server that is configured in mqtt.config (this file can be deleted if MQTT is not required)
 
+The polling interval is defineď in the mqttPollingInterval field
+
 ```
 <?xml version="1.0" encoding="utf-8" ?>
 <configuration>
@@ -152,6 +154,7 @@ The HWINFO sensor data can be sent to an MQTT server that is configured in mqtt.
     <add key="mqttPassword" value="secretpassword" />
     <add key="mqttPort" value="1883" />
     <add key="mqttSecure" value="False" />
+    <add key="mqttPollingInterval" value="5000" />
   </mqtt>
 </configuration>
 ```

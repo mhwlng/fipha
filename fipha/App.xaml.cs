@@ -370,9 +370,12 @@ namespace fipha
                                                             DateTime.Now.AddMinutes(-sensor.ChartMinutes),
                                                             DateTime.Now);
 
-                                                        (sensor.Points, sensor.MinVString, sensor.MaxVString) =
-                                                            HistoryToChart(sensor, FipPanel.ChartImageDisplayWidth,
-                                                                FipPanel.ChartImageDisplayHeight);
+                                                        if (sensor.HistoryList != null)
+                                                        {
+                                                            (sensor.Points, sensor.MinVString, sensor.MaxVString) =
+                                                                HistoryToChart(sensor, FipPanel.ChartImageDisplayWidth,
+                                                                    FipPanel.ChartImageDisplayHeight);
+                                                        }
 
                                                     }
                                                 }
@@ -398,13 +401,15 @@ namespace fipha
 
                 var hwInfoToken = _hwInfoTokenSource.Token;
 
+                MQTT.FillConfig();
+
                 if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")) && HWInfo.SensorData.Any())
                 {
                     HWInfoTask = Task.Run(async () =>
                     {
                         await MQTT.Connect();
 
-                        Log.Info("HWInfo task started");
+                        Log.Info($"HWInfo task started, polling interval {MQTT.MqttPollingInterval} ms");
 
                         if (HWInfo.SensorData.Any())
                         {
@@ -461,7 +466,7 @@ namespace fipha
 
                                 //!!!FipHandler.RefreshHWInfoPages();
 
-                                await Task.Delay(5 * 1000, _hwInfoTokenSource.Token); // repeat every 5 seconds
+                                await Task.Delay(MQTT.MqttPollingInterval, _hwInfoTokenSource.Token); // repeat every 5 seconds
                             }
                         }
 
