@@ -221,22 +221,6 @@ namespace fipha
                     Log.Error("No Home Assistant Connection for Flight Instrument Panels");
                 }
 
-                splashScreen.Dispatcher.Invoke(() =>
-                    splashScreen.ProgressText.Text = "Getting sensor data from HWInfo...");
-
-                HWInfo.ReadMem("HWINFO.INC");
-
-                if (HWInfo.SensorData.Any())
-                {
-                    Log.Info($"Writing {HWInfo.SensorData.Count} HWINFO Sensors to hwinfo.json");
-
-                    HWInfo.SaveDataToFile(@"Data\hwinfo.json");
-                }
-                else
-                {
-                    Log.Error("No HWINFO Sensors Found");
-                }
-
                 Dispatcher.Invoke(() =>
                 {
                     var window = Current.MainWindow = new MainWindow();
@@ -403,51 +387,64 @@ namespace fipha
 
                 MQTT.FillConfig();
 
-                if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")) && HWInfo.SensorData.Any())
+                var incPath = Path.Combine(App.ExePath, "HWINFO.INC");
+
+                var onlyOnce = true;
+
+                if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")) && File.Exists(incPath))
                 {
                     HWInfoTask = Task.Run(async () =>
                     {
-                        await MQTT.Connect();
+                       await MQTT.Connect();
 
                         Log.Info($"HWInfo task started, polling interval {MQTT.MqttPollingInterval} ms");
 
-                        if (HWInfo.SensorData.Any())
+                        while (true)
                         {
-                            foreach (var sensor in HWInfo.SensorData)
+                            if (hwInfoToken.IsCancellationRequested)
                             {
-                                foreach (var element in sensor.Value.Elements)
-                                {
-                                    var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTDiscoveryObj
-                                    {
-                                        device_class = element.Value.DeviceClass,
-                                        name = element.Value.Name,
-                                        state_topic =
-                                            $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
-                                        unit_of_measurement = element.Value.Unit,
-                                        value_template = "{{ value_json.value}}",
-                                        unique_id = element.Value.Node,
-                                        state_class = "measurement"
-                                    }, new JsonSerializerSettings
-                                    {
-                                        NullValueHandling = NullValueHandling.Ignore
-                                    });
-
-                                    await MQTT.Publish(
-                                        $"homeassistant/{element.Value.Component}/{element.Value.Node}/config",
-                                        mqttValue);
-
-                                }
+                                hwInfoToken.ThrowIfCancellationRequested();
                             }
 
-                            while (true)
+                            HWInfo.ReadMem();
+
+                            if (HWInfo.SensorData.Any())
                             {
-                                if (hwInfoToken.IsCancellationRequested)
+                                if (onlyOnce)
                                 {
-                                    hwInfoToken.ThrowIfCancellationRequested();
+                                    onlyOnce = false;
+
+                                    Log.Info($"HWINFO Sensors found, Writing all HWINFO Sensors to hwinfo.json");
+
+                                    HWInfo.SaveDataToFile(@"Data\hwinfo.json");
+
+                                    foreach (var sensor in HWInfo.SensorData)
+                                    {
+                                        foreach (var element in sensor.Value.Elements)
+                                        {
+                                            var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTDiscoveryObj
+                                            {
+                                                device_class = element.Value.DeviceClass,
+                                                name = element.Value.Name,
+                                                state_topic =
+                                                    $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
+                                                unit_of_measurement = element.Value.Unit,
+                                                value_template = "{{ value_json.value}}",
+                                                unique_id = element.Value.Node,
+                                                state_class = "measurement"
+                                            }, new JsonSerializerSettings
+                                            {
+                                                NullValueHandling = NullValueHandling.Ignore
+                                            });
+
+                                            await MQTT.Publish(
+                                                $"homeassistant/{element.Value.Component}/{element.Value.Node}/config",
+                                                mqttValue);
+
+                                        }
+                                    }
                                 }
-
-                                HWInfo.ReadMem("HWINFO.INC");
-
+                               
                                 foreach (var sensor in HWInfo.SensorData)
                                 {
                                     foreach (var element in sensor.Value.Elements)
@@ -463,11 +460,20 @@ namespace fipha
                                     }
 
                                 }
-
+                            
                                 //!!!FipHandler.RefreshHWInfoPages();
-
-                                await Task.Delay(MQTT.MqttPollingInterval, _hwInfoTokenSource.Token); // repeat every 5 seconds
                             }
+                            else
+                            {
+                                Log.Error("No HWINFO Sensors Found");
+
+                                onlyOnce = true;
+
+                                Thread.Sleep(5000);
+                            }
+
+                            await Task.Delay(MQTT.MqttPollingInterval,
+                                _hwInfoTokenSource.Token); // repeat every 5 seconds
                         }
 
                     }, hwInfoToken);

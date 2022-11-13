@@ -349,37 +349,37 @@ namespace fipha
 
             return deviceClass;
         }
-        public static void ReadMem(string incPath)
+        public static void ReadMem()
         {
             lock (RefreshHWInfoLock)
             {
                 try
                 {
-                    var mmf = MemoryMappedFile.OpenExisting(HWINFO_SHARED_MEM_FILE_NAME, MemoryMappedFileRights.Read);
-                    var accessor = mmf.CreateViewAccessor(0L, Marshal.SizeOf(typeof(_HWiNFO_SHARED_MEM)), MemoryMappedFileAccess.Read);
-                    
+                    var mmf = MemoryMappedFile.OpenExisting(HWINFO_SHARED_MEM_FILE_NAME,
+                        MemoryMappedFileRights.Read);
+                    var accessor = mmf.CreateViewAccessor(0L, Marshal.SizeOf(typeof(_HWiNFO_SHARED_MEM)),
+                        MemoryMappedFileAccess.Read);
+
                     accessor.Read(0L, out _HWiNFO_SHARED_MEM hWiNFOMemory);
-                    
+
                     ReadSensors(mmf, hWiNFOMemory);
 
                     if (IncData == null)
                     {
-                        incPath = Path.Combine(App.ExePath, incPath);
+                        var parser = new FileIniDataParser();
 
-                        if (File.Exists(incPath))
-                        {
-                            var parser = new FileIniDataParser();
+                        var incPath = Path.Combine(App.ExePath, "HWINFO.INC");
 
-                            IncData = parser.ReadFile(incPath);
-                        }
+                        IncData = parser.ReadFile(incPath);
                     }
 
                     ParseIncFile();
-
+                
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("HWINFO Shared Memory Read Problem", ex);
+                    SensorData = new Dictionary<int, SensorObj>();
+                    Log.Error($"HWINFO Shared Memory Read Problem {HWINFO_SHARED_MEM_FILE_NAME}", ex);
                 }
             }
         }
