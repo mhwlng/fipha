@@ -56,14 +56,14 @@ namespace fipha
         {
             public uint SensorId;
             public uint SensorInstance;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_SENSORS_STRING_LEN)]
-            public string SensorNameOrig;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_SENSORS_STRING_LEN)]
-            public string SensorNameUser;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_SENSORS_STRING_LEN)]
+            public byte[] SensorNameOrig;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_SENSORS_STRING_LEN)]
+            public byte[] SensorNameUser;
 
             // Version 2+ new:
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_SENSORS_STRING_LEN)]
-            public string utfSensorNameUser; // Sensor name displayed, which might be translated or renamed by user [UTF-8 string]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_SENSORS_STRING_LEN)]
+            public byte[] UtfSensorNameUser; // Sensor name displayed, which might be translated or renamed by user [UTF-8 string]
 
         }
 
@@ -73,22 +73,22 @@ namespace fipha
             public SENSOR_TYPE SensorType;
             public uint SensorIndex;
             public uint ElementId;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_SENSORS_STRING_LEN)]
-            public string LabelOrig;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_SENSORS_STRING_LEN)]
-            public string LabelUser;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_UNIT_STRING_LEN)]
-            public string Unit;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_SENSORS_STRING_LEN)]
+            public byte[] LabelOrig;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_SENSORS_STRING_LEN)]
+            public byte[] LabelUser;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_UNIT_STRING_LEN)]
+            public byte[] Unit;
             public double Value;
             public double ValueMin;
             public double ValueMax;
             public double ValueAvg;
 
             // Version 2+ new:
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_SENSORS_STRING_LEN)]
-            public string utfLabelUser; // Label displayed, which might be translated or renamed by user [UTF-8 string]
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = HWINFO_UNIT_STRING_LEN)]
-            public string utfUnit;          // e.g. "RPM" [UTF-8 string]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_SENSORS_STRING_LEN)]
+            public byte[] UtfLabelUser; // Label displayed, which might be translated or renamed by user [UTF-8 string]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_UNIT_STRING_LEN)]
+            public byte[] UtfUnit;          // e.g. "RPM" [UTF-8 string]
         }
         
         public class ElementObj
@@ -409,17 +409,21 @@ namespace fipha
                     
                     if (!FullSensorData.ContainsKey(index))
                     {
-                        var sensorName = structure.SensorNameUser;
+                        var sensorNameOrig = Encoding.GetEncoding(1252).GetString(structure.SensorNameOrig).TrimEnd((char)0); 
+
+                        var sensorName = Encoding.GetEncoding(1252).GetString(structure.SensorNameUser).TrimEnd((char)0); 
+
                         if (hWiNFOMemory.Version > 1)
                         {
-                            sensorName = structure.utfSensorNameUser;
+                            sensorName = Encoding.UTF8.GetString(structure.UtfSensorNameUser).TrimEnd((char)0);
+
                         }
 
                         var sensor = new SensorObj
                         {
                             SensorId = structure.SensorId,
                             SensorInstance = structure.SensorInstance,
-                            SensorNameOrig = structure.SensorNameOrig,
+                            SensorNameOrig = sensorNameOrig,
                             SensorNameUser = sensorName,
                             Elements = new Dictionary<string, ElementObj>()
                         };
@@ -461,16 +465,20 @@ namespace fipha
 
                     var elementKey = sensor.SensorId + "-" + sensor.SensorInstance + "-" + structure.ElementId;
 
-                    var unit = structure.Unit;
+                    var labelOrig = Encoding.GetEncoding(1252).GetString(structure.LabelOrig).TrimEnd((char)0); 
+
+                    var unit = Encoding.GetEncoding(1252).GetString(structure.Unit).TrimEnd((char)0); 
+
                     if (hWiNFOMemory.Version > 1)
                     {
-                        unit = structure.utfUnit;
+                        unit = Encoding.UTF8.GetString(structure.UtfUnit).TrimEnd((char)0); 
                     }
 
-                    var label = structure.LabelUser;
+                    var label = System.Text.Encoding.GetEncoding(1252).GetString(structure.LabelUser).TrimEnd((char)0); 
+
                     if (hWiNFOMemory.Version > 1)
                     {
-                        label = structure.utfLabelUser;
+                        label = Encoding.UTF8.GetString(structure.UtfLabelUser).TrimEnd((char)0); 
                     }
 
                     var element = new ElementObj
@@ -479,17 +487,17 @@ namespace fipha
 
                         SensorType = structure.SensorType,
                         ElementId = structure.ElementId,
-                        LabelOrig = structure.LabelOrig,
+                        LabelOrig = labelOrig,
                         LabelUser = label,
                         Unit = unit,
-                        NumericValue = (float)RoundValue(structure.SensorType, structure.Unit, structure.Value),
-                        Value = NumberFormat(structure.SensorType, structure.Unit, structure.Value),
-                        ValueMin = NumberFormat(structure.SensorType, structure.Unit, structure.ValueMin),
-                        ValueMax = NumberFormat(structure.SensorType, structure.Unit, structure.ValueMax),
-                        ValueAvg = NumberFormat(structure.SensorType, structure.Unit,structure.ValueAvg),
+                        NumericValue = (float)RoundValue(structure.SensorType, unit, structure.Value),
+                        Value = NumberFormat(structure.SensorType, unit, structure.Value),
+                        ValueMin = NumberFormat(structure.SensorType, unit, structure.ValueMin),
+                        ValueMax = NumberFormat(structure.SensorType, unit, structure.ValueMax),
+                        ValueAvg = NumberFormat(structure.SensorType, unit,structure.ValueAvg),
                         Node = null,
                         Name = null,
-                        DeviceClass = DeviceClass(structure.SensorType, structure.Unit),
+                        DeviceClass = DeviceClass(structure.SensorType, unit),
                         Component = "sensor"
                     };
 
