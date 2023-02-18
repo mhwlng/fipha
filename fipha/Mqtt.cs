@@ -134,6 +134,11 @@ namespace fipha
               .WithClientId(ClientId)
               .WithCredentials(_mqttUser, _mqttPassword)
               .WithTcpServer(_mqttUri, _mqttPort)
+
+              .WithWillTopic("homeassistant/death")
+              .WithWillPayload("offline")
+              .WithWillQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+              .WithWillRetain(true)
               .WithCleanSession();
 
             var options = _mqttSecure

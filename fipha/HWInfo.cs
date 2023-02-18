@@ -124,6 +124,7 @@ namespace fipha
             public string value_template;
             public string unique_id;
             public string state_class;
+            public string availability_topic;
         }
 
         public class MQTTStateObj
@@ -409,14 +410,19 @@ namespace fipha
                     
                     if (!FullSensorData.ContainsKey(index))
                     {
-                        var sensorNameOrig = Encoding.GetEncoding(1252).GetString(structure.SensorNameOrig).TrimEnd((char)0); 
+                        //var sensorNameOrig = Encoding.GetEncoding(1252).GetString(structure.SensorNameOrig).TrimEnd((char)0);
+                        var sensorNameOrig = Encoding.UTF8.GetString(structure.SensorNameOrig).TrimEnd((char)0);
 
-                        var sensorName = Encoding.GetEncoding(1252).GetString(structure.SensorNameUser).TrimEnd((char)0); 
+                        var sensorName = ""; 
 
                         if (hWiNFOMemory.Version > 1)
                         {
                             sensorName = Encoding.UTF8.GetString(structure.UtfSensorNameUser).TrimEnd((char)0);
-
+                        }
+                        else
+                        {
+                            //sensorName = Encoding.GetEncoding(1252).GetString(structure.SensorNameUser).TrimEnd((char)0);
+                            sensorName = Encoding.UTF8.GetString(structure.SensorNameUser).TrimEnd((char)0);
                         }
 
                         var sensor = new SensorObj
@@ -465,20 +471,30 @@ namespace fipha
 
                     var elementKey = sensor.SensorId + "-" + sensor.SensorInstance + "-" + structure.ElementId;
 
-                    var labelOrig = Encoding.GetEncoding(1252).GetString(structure.LabelOrig).TrimEnd((char)0); 
+                    //var labelOrig = Encoding.GetEncoding(1252).GetString(structure.LabelOrig).TrimEnd((char)0);
+                    var labelOrig = Encoding.UTF8.GetString(structure.LabelOrig).TrimEnd((char)0);
 
-                    var unit = Encoding.GetEncoding(1252).GetString(structure.Unit).TrimEnd((char)0); 
+                    var unit = "";
 
                     if (hWiNFOMemory.Version > 1)
                     {
                         unit = Encoding.UTF8.GetString(structure.UtfUnit).TrimEnd((char)0); 
+                    } else
+                    {
+                        //unit = Encoding.GetEncoding(1252).GetString(structure.Unit).TrimEnd((char)0);
+                        unit = Encoding.UTF8.GetString(structure.Unit).TrimEnd((char)0);
                     }
 
-                    var label = System.Text.Encoding.GetEncoding(1252).GetString(structure.LabelUser).TrimEnd((char)0); 
+                    var label = "?";
 
                     if (hWiNFOMemory.Version > 1)
                     {
                         label = Encoding.UTF8.GetString(structure.UtfLabelUser).TrimEnd((char)0); 
+                    }
+                    else
+                    {
+                        //label = System.Text.Encoding.GetEncoding(1252).GetString(structure.LabelUser).TrimEnd((char)0);
+                        label = System.Text.Encoding.UTF8.GetString(structure.LabelUser).TrimEnd((char)0);
                     }
 
                     var element = new ElementObj

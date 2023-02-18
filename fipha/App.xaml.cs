@@ -413,6 +413,8 @@ namespace fipha
                                 if (onlyOnce)
                                 {
                                     onlyOnce = false;
+                                    
+                                    await MQTT.Publish($"homeassistant/death", "online");
 
                                     Log.Info($"HWINFO Sensors found, Writing all HWINFO Sensors to hwinfo.json");
 
@@ -431,7 +433,8 @@ namespace fipha
                                                 unit_of_measurement = element.Value.Unit,
                                                 value_template = "{{ value_json.value}}",
                                                 unique_id = element.Value.Node,
-                                                state_class = "measurement"
+                                                state_class = "measurement",
+                                                availability_topic = "homeassistant/death"
                                             }, new JsonSerializerSettings
                                             {
                                                 NullValueHandling = NullValueHandling.Ignore
