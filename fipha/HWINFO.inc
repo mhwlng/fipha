@@ -8,7 +8,7 @@ RAMTemp-SensorInstance=0x0
 RAMTemp-EntryId=0x1000000
 
 WaterTemp-SensorId=0xfc04a100
-WaterTemp-SensorInstance=0x30
+WaterTemp-SensorInstance=0x8
 WaterTemp-EntryId=0x1000000
 
 GPUTemp-SensorId=0xe0002000
@@ -36,12 +36,12 @@ GPUFanSpeed-SensorInstance=0x0
 GPUFanSpeed-EntryId=0x3000000
 
 PumpSpeed-SensorId=0xfc04a100
-PumpSpeed-SensorInstance=0x30
-PumpSpeed-EntryId=0x3000002
+PumpSpeed-SensorInstance=0x8
+PumpSpeed-EntryId=0x3000000
 
 RadiatorFanSpeed-SensorId=0xfc04a100
-RadiatorFanSpeed-SensorInstance=0x30
-RadiatorFanSpeed-EntryId=0x3000000
+RadiatorFanSpeed-SensorInstance=0x8
+RadiatorFanSpeed-EntryId=0x3000001
 
 ChipsetFanSpeed-SensorId=0xf0ec0502
 ChipsetFanSpeed-SensorInstance=0x0

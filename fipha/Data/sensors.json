@@ -26,6 +26,9 @@
           },
           {
             "entityId": "sensor.dev5_temperature_vrm"
+          },
+          {
+            "entityId": "sensor.dev5_temperature_water"
           }
         ]
       },
@@ -48,6 +51,12 @@
           },
           {
             "entityId": "sensor.dev5_fan_speed_gpu"
+          },
+          {
+            "entityId": "sensor.dev5_fan_speed_pump"
+          },
+          {
+            "entityId": "sensor.dev5_fan_speed_radiator"
           }
         ]
       },
