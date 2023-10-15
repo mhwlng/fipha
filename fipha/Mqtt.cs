@@ -143,7 +143,10 @@ namespace fipha
 
             var options = _mqttSecure
               ? messageBuilder
-                .WithTls()
+                  .WithTlsOptions(o =>
+                  {
+
+                  })
                 .Build()
               : messageBuilder
                 .Build();

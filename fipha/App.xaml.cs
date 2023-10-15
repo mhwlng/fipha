@@ -27,6 +27,7 @@ using Newtonsoft.Json.Serialization;
 using static fipha.SensorData;
 using static fipha.NowPlayingData;
 using System.Windows.Media;
+using Microsoft.Win32;
 
 
 // ReSharper disable StringLiteralTypo
@@ -96,6 +97,34 @@ namespace fipha
             process.WaitForExit();
         }
 
+        private async void OnPowerChange(object s, PowerModeChangedEventArgs e)
+        {
+            switch (e.Mode)
+            {
+                case PowerModes.Resume:
+
+                    Log.Info($"Wake Up");
+                    
+                    await Task.Run(() =>
+                    {
+                        Thread.Sleep(10000);
+
+                        System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
+                        Application.Current.Shutdown();
+
+
+                    });
+
+
+                    break;
+                case PowerModes.Suspend:
+
+                    Log.Info($"Go To Sleep");
+
+                    break;
+            }
+        }
+
         protected override void OnStartup(StartupEventArgs evtArgs)
         {
             const string appName = "fipha";
@@ -105,7 +134,7 @@ namespace fipha
             if (!createdNew)
             {
                 //app is already running! Exiting the application  
-                Current.Shutdown();
+                //Current.Shutdown();
             }
 
             GetExePath();
@@ -484,6 +513,7 @@ namespace fipha
 
             });
 
+            SystemEvents.PowerModeChanged += OnPowerChange;
         }
 
 
@@ -543,6 +573,8 @@ namespace fipha
             {
                 _hwInfoTokenSource.Dispose();
             }
+
+            SystemEvents.PowerModeChanged += OnPowerChange;
 
             Log.Info("exiting");
 
