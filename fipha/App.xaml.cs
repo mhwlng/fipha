@@ -105,15 +105,12 @@ namespace fipha
 
                     Log.Info($"Wake Up");
                     
-                    await Task.Run(() =>
-                    {
-                        Thread.Sleep(10000);
+               
+                     await Task.Delay(20000);
 
-                        System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
-                        Application.Current.Shutdown();
+                     System.Diagnostics.Process.Start(Application.ResourceAssembly.Location);
+                     Application.Current.Shutdown();
 
-
-                    });
 
 
                     break;
