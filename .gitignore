@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 
 *.secret
+/fipha/HWiNFOSharedMemoryViewer.exe
