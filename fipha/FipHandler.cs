@@ -142,7 +142,7 @@ namespace fipha
 
                 DirectOutputClass.GetDeviceType(device, ref mGuid);
 
-                App.Log.Info($"Adding new DirectOutput device {device} of type: {mGuid.ToString()}");
+                App.Log.Info($"Adding new DirectOutput device {device} of type: {mGuid}");
 
                 //Called initially when enumerating FIPs.
 

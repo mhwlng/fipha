@@ -5,9 +5,9 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml;
 using MQTTnet;
 using MQTTnet.Client;
@@ -55,12 +55,38 @@ namespace fipha
         private static void MqttOnConnectingFailed(ConnectingFailedEventArgs e)
         {
             App.Log.Error($"MQTT Client: Connection Failed", e.Exception);
+
+            if (App.MustRestart == 0)
+            {
+                App.MustRestart = 1;
+            }
         }
 
         private static void MqttOnConnected(MqttClientConnectedEventArgs e)
         {
 
             App.Log.Info($"MQTT Client: Connected with result: {e.ConnectResult?.ResultCode}");
+
+            if (App.MustRestart == 1 && e.ConnectResult?.ResultCode == MqttClientConnectResultCode.Success)
+            {
+                App.MustRestart = 2;
+
+                void Ts()
+                {
+                    Task.Delay(5000);
+
+                    Application.Current.Dispatcher.BeginInvoke((Action)delegate()
+                    {
+                        Process.Start(Application.ResourceAssembly.Location);
+
+                        Application.Current.Shutdown();
+                    });
+                }
+
+                var t = new Thread(Ts);
+                t.Start();
+
+            }
         }
 
         private static void MqttOnDisconnected(MqttClientDisconnectedEventArgs e)

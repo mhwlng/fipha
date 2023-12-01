@@ -46,6 +46,8 @@ namespace fipha
 
         public static bool IsShuttingDown { get; set; }
 
+        public static int MustRestart { get; set; }
+
         public static EntityClient EntityClient { get; set; }
         public static StatesClient StatesClient { get; set; }
         public static HistoryClient HistoryClient { get; set; }
@@ -64,7 +66,7 @@ namespace fipha
         public static Task HWInfoTask;
         private static CancellationTokenSource _hwInfoTokenSource = new CancellationTokenSource();
 
-        private static Mutex _mutex;
+        //private static Mutex _mutex;
 
         private TaskbarIcon _notifyIcon;
 
@@ -87,7 +89,7 @@ namespace fipha
             ExePath = Path.GetDirectoryName(strExeFilePath);
         }
 
-        private static void RunProcess(string fileName)
+        /*private static void RunProcess(string fileName)
         {
             var process = new Process();
             // Configure the process using the StartInfo properties.
@@ -95,7 +97,7 @@ namespace fipha
             process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             process.Start();
             process.WaitForExit();
-        }
+        }*/
 
         private async void OnPowerChange(object s, PowerModeChangedEventArgs e)
         {
@@ -124,15 +126,15 @@ namespace fipha
 
         protected override void OnStartup(StartupEventArgs evtArgs)
         {
-            const string appName = "fipha";
+            //const string appName = "fipha";
 
-            _mutex = new Mutex(true, appName, out var createdNew);
+            //_mutex = new Mutex(true, appName, out var createdNew);
 
-            if (!createdNew)
-            {
+            //if (!createdNew)
+            //{
                 //app is already running! Exiting the application  
                 //Current.Shutdown();
-            }
+            //}
 
             GetExePath();
 
