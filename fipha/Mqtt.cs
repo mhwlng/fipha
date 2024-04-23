@@ -18,9 +18,9 @@ namespace fipha
 {
     public static class MQTT
     {
-        private static MqttFactory factory = new MqttFactory();
-        private static IManagedMqttClient mqttClient = factory.CreateManagedMqttClient();
-        private static  string ClientId = Guid.NewGuid().ToString();
+        private static readonly MqttFactory Factory = new MqttFactory();
+        private static readonly IManagedMqttClient MqttClient = Factory.CreateManagedMqttClient();
+        private static readonly string ClientId = Guid.NewGuid().ToString();
 
         private static string _mqttUri;
         private static string _mqttUser;
@@ -42,7 +42,7 @@ namespace fipha
                     .Build();
 
             try { 
-                await mqttClient.EnqueueAsync(message);
+                await MqttClient.EnqueueAsync(message);
             }
             catch (Exception ex)
             {
@@ -161,7 +161,7 @@ namespace fipha
               .WithCredentials(_mqttUser, _mqttPassword)
               .WithTcpServer(_mqttUri, _mqttPort)
 
-              .WithWillTopic("homeassistant/death")
+              .WithWillTopic($"homeassistant/{Environment.MachineName.ToLower()}_death")
               .WithWillPayload("offline")
               .WithWillQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
               .WithWillRetain(true)
@@ -184,23 +184,23 @@ namespace fipha
 
             try
             {
-                mqttClient.ConnectedAsync += e =>
+                MqttClient.ConnectedAsync += e =>
                 {
                     MqttOnConnected(e);
                     return Task.CompletedTask;
                 };
-                mqttClient.DisconnectedAsync += e =>
+                MqttClient.DisconnectedAsync += e =>
                 {
                     MqttOnDisconnected(e);
                     return Task.CompletedTask;
                 };
-                mqttClient.ConnectingFailedAsync += e =>
+                MqttClient.ConnectingFailedAsync += e =>
                 {
                     MqttOnConnectingFailed(e);
                     return Task.CompletedTask;
                 };
 
-                await mqttClient.StartAsync(managedOptions);
+                await MqttClient.StartAsync(managedOptions);
 
             }
             catch (Exception ex)

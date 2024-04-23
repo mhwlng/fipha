@@ -63,9 +63,9 @@ GPUPower-SensorId=0xe0002000
 GPUPower-SensorInstance=0x0
 GPUPower-EntryId=0x5000000
 
-FrameRate-SensorId=0xf00f5000
+FrameRate-SensorId=0xf0000ff0
 FrameRate-SensorInstance=0x0
-FrameRate-EntryId=0x8000000
+FrameRate-EntryId=0x800000a
 
 [HWINFO-Config-FRAME RATE]
 FrameRate=Frame Rate

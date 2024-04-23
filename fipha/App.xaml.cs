@@ -55,16 +55,16 @@ namespace fipha
         public static List<string> MediaPlayers { get; set; }
 
         public static List<string> Sensors { get; set; }
-        
 
-        public static Task HaMediaPlayerTask;
-        private static CancellationTokenSource _haMediaPlayerTokenSource = new CancellationTokenSource();
 
-        public static Task HaSensorTask;
-        private static CancellationTokenSource _haSensorTokenSource = new CancellationTokenSource();
+        private static Task _haMediaPlayerTask;
+        private static readonly CancellationTokenSource _haMediaPlayerTokenSource = new CancellationTokenSource();
 
-        public static Task HWInfoTask;
-        private static CancellationTokenSource _hwInfoTokenSource = new CancellationTokenSource();
+        private static Task _haSensorTask;
+        private static readonly CancellationTokenSource _haSensorTokenSource = new CancellationTokenSource();
+
+        private static Task _hwInfoTask;
+        private static readonly CancellationTokenSource _hwInfoTokenSource = new CancellationTokenSource();
 
         //private static Mutex _mutex;
 
@@ -279,7 +279,7 @@ namespace fipha
 
                 if (EntityClient != null && MediaPlayers != null)
                 {
-                    HaMediaPlayerTask = Task.Run(async () =>
+                    _haMediaPlayerTask = Task.Run(async () =>
                     {
 
                         Log.Info("HA Media Player task started");
@@ -335,7 +335,7 @@ namespace fipha
 
                 if (EntityClient != null && Sensors?.Any() == true && SensorPages?.Any() == true)
                 {
-                    HaSensorTask = Task.Run(async () =>
+                    _haSensorTask = Task.Run(async () =>
                     {
 
                         Log.Info("HA Sensor task started");
@@ -421,7 +421,7 @@ namespace fipha
 
                 if (File.Exists(Path.Combine(App.ExePath, "mqtt.config")) && File.Exists(incPath))
                 {
-                    HWInfoTask = Task.Run(async () =>
+                    _hwInfoTask = Task.Run(async () =>
                     {
                        await MQTT.Connect();
 
@@ -442,7 +442,7 @@ namespace fipha
                                 {
                                     onlyOnce = false;
                                     
-                                    await MQTT.Publish($"homeassistant/death", "online");
+                                    await MQTT.Publish($"homeassistant/{Environment.MachineName.ToLower()}_death", "online");
 
                                     Log.Info($"HWINFO Sensors found, Writing all HWINFO Sensors to hwinfo.json");
 
@@ -462,7 +462,7 @@ namespace fipha
                                                 value_template = "{{ value_json.value}}",
                                                 unique_id = element.Value.Node,
                                                 state_class = "measurement",
-                                                availability_topic = "homeassistant/death"
+                                                availability_topic = $"homeassistant/{Environment.MachineName.ToLower()}_death"
                                             }, new JsonSerializerSettings
                                             {
                                                 NullValueHandling = NullValueHandling.Ignore
@@ -528,7 +528,7 @@ namespace fipha
 
             try
             {
-                HaMediaPlayerTask?.Wait(haMediaPlayerToken);
+                _haMediaPlayerTask?.Wait(haMediaPlayerToken);
             }
             catch (OperationCanceledException)
             {
@@ -545,7 +545,7 @@ namespace fipha
 
             try
             {
-                HaSensorTask?.Wait(haSensorToken);
+                _haSensorTask?.Wait(haSensorToken);
             }
             catch (OperationCanceledException)
             {
@@ -562,7 +562,7 @@ namespace fipha
 
             try
             {
-                HWInfoTask?.Wait(hwInfoToken);
+                _hwInfoTask?.Wait(hwInfoToken);
             }
             catch (OperationCanceledException)
             {
