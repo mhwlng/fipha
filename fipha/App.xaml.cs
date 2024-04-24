@@ -43,6 +43,7 @@ namespace fipha
 
         public static string HaUrl { get; set; }
         public static string HaToken { get; set; }
+        public static string SplashScreen { get; set; }
 
         public static bool IsShuttingDown { get; set; }
 
@@ -132,8 +133,8 @@ namespace fipha
 
             //if (!createdNew)
             //{
-                //app is already running! Exiting the application  
-                //Current.Shutdown();
+            //app is already running! Exiting the application  
+            //Current.Shutdown();
             //}
 
             GetExePath();
@@ -150,6 +151,7 @@ namespace fipha
                 {
                     HaUrl = appSection["haUrl"];
                     HaToken = appSection["haToken"];
+                    SplashScreen = appSection["SplashScreen"];
                 }
 
                 if (!string.IsNullOrEmpty(HaUrl) && !string.IsNullOrEmpty(HaToken) &&
@@ -183,8 +185,14 @@ namespace fipha
             _notifyIcon.IconSource = new BitmapImage(new Uri("pack://application:,,,/fipha;component/fipha.ico"));
             _notifyIcon.ToolTipText = "fipha";
 
+            var showSplashScreen = !string.IsNullOrEmpty(SplashScreen) && SplashScreen.ToLower().Contains("true");
+
             var splashScreen = new SplashScreenWindow();
-            splashScreen.Show();
+
+            if (showSplashScreen)
+            {
+                splashScreen.Show();
+            }
 
             Task.Run(async () =>
             {
@@ -203,8 +211,12 @@ namespace fipha
                         "System.Collections.Generic"
                         }*/
                     };
-                    splashScreen.Dispatcher.Invoke(() =>
-                        splashScreen.ProgressText.Text = "Loading cshtml templates...");
+
+                    if (showSplashScreen)
+                    {
+                        splashScreen.Dispatcher.Invoke(() =>
+                            splashScreen.ProgressText.Text = "Loading cshtml templates...");
+                    }
 
                     Engine.Razor = RazorEngineService.Create(config);
 
@@ -219,7 +231,11 @@ namespace fipha
                     CssData = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.ParseStyleSheet(
                         File.ReadAllText(Path.Combine(ExePath, "Templates\\styles.css")), true);
 
-                    splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Getting data from HA...");
+                    if (showSplashScreen)
+                    {
+                        splashScreen.Dispatcher.Invoke(() =>
+                            splashScreen.ProgressText.Text = "Getting data from HA...");
+                    }
 
                     try
                     {
@@ -257,7 +273,11 @@ namespace fipha
 
                 if (EntityClient != null)
                 {
-                    splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Initializing FIP...");
+                    if (showSplashScreen)
+                    {
+                        splashScreen.Dispatcher.Invoke(() => splashScreen.ProgressText.Text = "Initializing FIP...");
+                    }
+
                     if (!FipHandler.Initialize())
                     {
                         Current.Shutdown();
@@ -272,7 +292,10 @@ namespace fipha
                     window?.Hide();
                 });
 
-                Dispatcher.Invoke(() => { splashScreen.Close(); });
+                if (showSplashScreen)
+                {
+                    Dispatcher.Invoke(() => { splashScreen.Close(); });
+                }
 
                 var haMediaPlayerToken = _haMediaPlayerTokenSource.Token;
 
@@ -423,7 +446,7 @@ namespace fipha
                 {
                     _hwInfoTask = Task.Run(async () =>
                     {
-                       await MQTT.Connect();
+                        await MQTT.Connect();
 
                         Log.Info($"HWInfo task started, polling interval {MQTT.MqttPollingInterval} ms");
 
