@@ -464,8 +464,8 @@ namespace fipha
                                 if (onlyOnce)
                                 {
                                     onlyOnce = false;
-                                    
-                                    await MQTT.Publish($"homeassistant/{Environment.MachineName.ToLower()}_death", "online");
+
+                                    await MQTT.Publish($"homeassistant/{Environment.MachineName.ToLower()}/{Environment.MachineName.ToLower()}_death", "online");
 
                                     Log.Info($"HWINFO Sensors found, Writing all HWINFO Sensors to hwinfo.json");
 
@@ -477,28 +477,35 @@ namespace fipha
                                         {
                                             var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTDiscoveryObj
                                             {
+                                                device = new HWInfo.DeviceObj
+                                                {
+                                                    identifiers = new[] { $"hwinfo2mqtt_{Environment.MachineName.ToLower()}" },
+                                                    name = Environment.MachineName.ToLower(),
+                                                    manufacturer = "hwinfo2mqtt"
+                                                },
+                                                object_id = element.Value.Node,
                                                 device_class = element.Value.DeviceClass,
                                                 name = element.Value.Name,
                                                 state_topic =
-                                                    $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
+                                                    $"homeassistant/{element.Value.Component}/{Environment.MachineName.ToLower()}/{element.Value.Node}/state",
                                                 unit_of_measurement = element.Value.Unit,
                                                 value_template = "{{ value_json.value}}",
                                                 unique_id = element.Value.Node,
                                                 state_class = "measurement",
-                                                availability_topic = $"homeassistant/{Environment.MachineName.ToLower()}_death"
+                                                availability_topic = $"homeassistant/{Environment.MachineName.ToLower()}/{Environment.MachineName.ToLower()}_death"
                                             }, new JsonSerializerSettings
                                             {
                                                 NullValueHandling = NullValueHandling.Ignore
                                             });
 
                                             await MQTT.Publish(
-                                                $"homeassistant/{element.Value.Component}/{element.Value.Node}/config",
+                                                $"homeassistant/{element.Value.Component}/{Environment.MachineName.ToLower()}/{element.Value.Node}/config",
                                                 mqttValue);
 
                                         }
                                     }
                                 }
-                               
+
                                 foreach (var sensor in HWInfo.SensorData)
                                 {
                                     foreach (var element in sensor.Value.Elements)
@@ -509,12 +516,12 @@ namespace fipha
                                         });
 
                                         await MQTT.Publish(
-                                            $"homeassistant/{element.Value.Component}/{element.Value.Node}/state",
+                                            $"homeassistant/{element.Value.Component}/{Environment.MachineName.ToLower()}/{element.Value.Node}/state",
                                             mqttValue);
                                     }
 
                                 }
-                            
+
                                 //!!!FipHandler.RefreshHWInfoPages();
                             }
                             else
