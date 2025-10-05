@@ -90,7 +90,7 @@ namespace fipha
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = HWINFO_UNIT_STRING_LEN)]
             public byte[] UtfUnit;          // e.g. "RPM" [UTF-8 string]
         }
-        
+
         public class ElementObj
         {
             [JsonIgnore]
@@ -115,6 +115,14 @@ namespace fipha
             public string Component;
         }
 
+        public class MQTTDevice
+        {
+            public string name { get; set; }
+            public string model { get; set; }
+            public string manufacturer { get; set; }
+            public string[] identifiers { get; set; }
+        }
+
         public class MQTTDiscoveryObj
         {
             public string device_class;
@@ -125,13 +133,15 @@ namespace fipha
             public string unique_id;
             public string state_class;
             public string availability_topic;
+            public string default_entity_id;
+            public string entity_category;
+            public MQTTDevice device;
         }
 
         public class MQTTStateObj
         {
             public float value;
         }
-
 
         public class SensorObj
         {
@@ -140,7 +150,7 @@ namespace fipha
 
             public string SensorNameOrig;
             public string SensorNameUser;
-            public Dictionary<string,ElementObj> Elements;
+            public Dictionary<string, ElementObj> Elements;
         }
 
         public static readonly object RefreshHWInfoLock = new object();
@@ -149,8 +159,8 @@ namespace fipha
         private const int HWINFO_SENSORS_STRING_LEN = 128;
         private const int HWINFO_UNIT_STRING_LEN = 16;
 
-        public static Dictionary<int,SensorObj> FullSensorData = new Dictionary<int,SensorObj>();
-        public static Dictionary<int, SensorObj> SensorData = new Dictionary<int,SensorObj>();
+        public static Dictionary<int, SensorObj> FullSensorData = new Dictionary<int, SensorObj>();
+        public static Dictionary<int, SensorObj> SensorData = new Dictionary<int, SensorObj>();
 
         public static Dictionary<string, ChartCircularBuffer> SensorTrends = new Dictionary<string, ChartCircularBuffer>();
 
@@ -182,7 +192,7 @@ namespace fipha
                     {
                         valstr = value.ToString("N3");
                     }
-                    
+
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_CLOCK:
@@ -239,10 +249,10 @@ namespace fipha
             switch (sensorType)
             {
                 case SENSOR_TYPE.SENSOR_TYPE_VOLT:
-                    val = Math.Round(value,3);
+                    val = Math.Round(value, 3);
                     break;
                 case SENSOR_TYPE.SENSOR_TYPE_CURRENT:
-                    val = Math.Round(value,3);
+                    val = Math.Round(value, 3);
                     break;
                 case SENSOR_TYPE.SENSOR_TYPE_POWER:
 
@@ -250,50 +260,50 @@ namespace fipha
                     {
                         val = Math.Round(value, 1);
                     }
-                    else 
+                    else
                     {
                         val = Math.Round(value, 3);
                     }
-                  
+
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_CLOCK:
-                    val = Math.Round(value,1);
+                    val = Math.Round(value, 1);
                     break;
                 case SENSOR_TYPE.SENSOR_TYPE_USAGE:
-                    val = Math.Round(value,1);
+                    val = Math.Round(value, 1);
                     break;
                 case SENSOR_TYPE.SENSOR_TYPE_TEMP:
-                    val = Math.Round(value,1);
+                    val = Math.Round(value, 1);
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_FAN:
-                    val = Math.Round(value,0);
+                    val = Math.Round(value, 0);
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_OTHER:
 
                     if (unit == "Yes/No")
                     {
-                       
+
                     }
                     else if (unit.EndsWith("GT/s") || unit == "x" || unit == "%")
                     {
-                        val = Math.Round(value,1);
+                        val = Math.Round(value, 1);
                     }
                     else if (unit.EndsWith("/s"))
                     {
-                        val = Math.Round(value,3);
+                        val = Math.Round(value, 3);
                     }
                     else if (unit.EndsWith("MB") || unit.EndsWith("GB") || unit == "T" || unit == "FPS")
                     {
-                        val = Math.Round(value,0);
+                        val = Math.Round(value, 0);
                     }
-                    
+
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_NONE:
-                  
+
                     break;
 
             }
@@ -322,39 +332,39 @@ namespace fipha
                     deviceClass = "frequency";
                     break;
                 case SENSOR_TYPE.SENSOR_TYPE_USAGE:
-                 
+
                     break;
                 case SENSOR_TYPE.SENSOR_TYPE_TEMP:
                     deviceClass = "temperature";
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_FAN:
-                  
+
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_OTHER:
 
                     if (unit == "Yes/No")
                     {
-                       
+
                     }
                     else if (unit.EndsWith("GT/s") || unit == "x" || unit == "%")
                     {
-                       
+
                     }
                     else if (unit.EndsWith("/s"))
                     {
-                      
+
                     }
                     else if (unit.EndsWith("MB") || unit.EndsWith("GB") || unit == "T" || unit == "FPS")
                     {
-                        
+
                     }
-                  
+
                     break;
 
                 case SENSOR_TYPE.SENSOR_TYPE_NONE:
-                  
+
                     break;
 
             }
@@ -386,7 +396,7 @@ namespace fipha
                     }
 
                     ParseIncFile();
-                
+
                 }
                 catch (Exception ex)
                 {
@@ -407,13 +417,13 @@ namespace fipha
                     var gcHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
                     var structure = (_HWiNFO_SENSOR)Marshal.PtrToStructure(gcHandle.AddrOfPinnedObject(), typeof(_HWiNFO_SENSOR));
                     gcHandle.Free();
-                    
+
                     if (!FullSensorData.ContainsKey(index))
                     {
                         //var sensorNameOrig = Encoding.GetEncoding(1252).GetString(structure.SensorNameOrig).TrimEnd((char)0);
                         var sensorNameOrig = Encoding.UTF8.GetString(structure.SensorNameOrig).TrimEnd((char)0);
 
-                        var sensorName = ""; 
+                        var sensorName = "";
 
                         if (hWiNFOMemory.Version > 1)
                         {
@@ -434,12 +444,12 @@ namespace fipha
                             Elements = new Dictionary<string, ElementObj>()
                         };
 
-                        FullSensorData.Add(index,sensor);
+                        FullSensorData.Add(index, sensor);
                     }
-                    
+
                 }
             }
-            
+
             ReadElements(mmf, hWiNFOMemory);
         }
 
@@ -467,7 +477,7 @@ namespace fipha
                     var structure = (_HWiNFO_ELEMENT)Marshal.PtrToStructure(gcHandle.AddrOfPinnedObject(), typeof(_HWiNFO_ELEMENT));
                     gcHandle.Free();
 
-                    var sensor = FullSensorData[(int) structure.SensorIndex];
+                    var sensor = FullSensorData[(int)structure.SensorIndex];
 
                     var elementKey = sensor.SensorId + "-" + sensor.SensorInstance + "-" + structure.ElementId;
 
@@ -478,8 +488,9 @@ namespace fipha
 
                     if (hWiNFOMemory.Version > 1)
                     {
-                        unit = Encoding.UTF8.GetString(structure.UtfUnit).TrimEnd((char)0); 
-                    } else
+                        unit = Encoding.UTF8.GetString(structure.UtfUnit).TrimEnd((char)0);
+                    }
+                    else
                     {
                         //unit = Encoding.GetEncoding(1252).GetString(structure.Unit).TrimEnd((char)0);
                         unit = Encoding.UTF8.GetString(structure.Unit).TrimEnd((char)0);
@@ -489,7 +500,7 @@ namespace fipha
 
                     if (hWiNFOMemory.Version > 1)
                     {
-                        label = Encoding.UTF8.GetString(structure.UtfLabelUser).TrimEnd((char)0); 
+                        label = Encoding.UTF8.GetString(structure.UtfLabelUser).TrimEnd((char)0);
                     }
                     else
                     {
@@ -510,7 +521,7 @@ namespace fipha
                         Value = NumberFormat(structure.SensorType, unit, structure.Value),
                         ValueMin = NumberFormat(structure.SensorType, unit, structure.ValueMin),
                         ValueMax = NumberFormat(structure.SensorType, unit, structure.ValueMax),
-                        ValueAvg = NumberFormat(structure.SensorType, unit,structure.ValueAvg),
+                        ValueAvg = NumberFormat(structure.SensorType, unit, structure.ValueAvg),
                         Node = null,
                         Name = null,
                         DeviceClass = DeviceClass(structure.SensorType, unit),

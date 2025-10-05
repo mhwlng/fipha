@@ -474,7 +474,44 @@ namespace fipha
                                     foreach (var sensor in HWInfo.SensorData)
                                     {
                                         foreach (var element in sensor.Value.Elements)
-                                        {
+                                        {/*
+                                          
+                                            {
+                                              "device_class": "power",
+                                              "name": "dev5 power gpu",
+                                              "state_topic": "homeassistant/sensor/dev5_power_gpu/state",
+                                              "unit_of_measurement": "W",
+                                              "value_template": "{{value_json.value}}",
+                                              "unique_id": "dev5_power_gpu",
+                                              "state_class": "measurement",
+                                              "availability_topic": "homeassistant/dev5_death",
+
+                                              "default_entity_id": "sensor.dev5_power_gpu",
+                                              "entity_category": "diagnostic",
+                                              "device": {
+                                                "name": "dev5",
+                                                "model": "HWINFO dev5",
+                                                "manufacturer": "HWINFO",
+                                                "identifiers": [
+                                                  "dev5"
+                                                ]
+                                              }
+                                            }
+                                                                                      
+                                          */
+                                            var machineName = Environment.MachineName.ToLower();
+
+                                            var mqttDevice = new HWInfo.MQTTDevice
+                                            {
+                                                name = machineName,
+                                                model = $"HWINFO {machineName}",
+                                                manufacturer = "HWINFO",
+                                                identifiers = new[]
+                                                {
+                                                    machineName
+                                                }
+                                            };
+
                                             var mqttValue = JsonConvert.SerializeObject(new HWInfo.MQTTDiscoveryObj
                                             {
                                                 device_class = element.Value.DeviceClass,
@@ -485,7 +522,12 @@ namespace fipha
                                                 value_template = "{{ value_json.value}}",
                                                 unique_id = element.Value.Node,
                                                 state_class = "measurement",
-                                                availability_topic = $"homeassistant/{Environment.MachineName.ToLower()}_death"
+                                                availability_topic = $"homeassistant/{machineName}_death",
+
+                                                default_entity_id = $"sensor.{element.Value.Node}",
+                                                entity_category = "diagnostic",
+                                                device = mqttDevice,
+
                                             }, new JsonSerializerSettings
                                             {
                                                 NullValueHandling = NullValueHandling.Ignore

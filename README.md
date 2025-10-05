@@ -53,7 +53,7 @@ edit appsettings.config with the Home Assistant URL and the Long-Lived Access To
 <?xml version="1.0" encoding="utf-8" ?>
 <appSettings>
   <add key="EnableWindowsFormsHighDpiAutoResizing" value="false" />
-  <add key="haUrl" value ="http://192.168.2.34:8123/" />
+  <add key="haUrl" value ="http://192.168.2.73:8123/" />
   <add key="haToken" value ="awsdfljhsdjkfhs...........3zFHM" />
 </appSettings>
 ```
@@ -149,7 +149,7 @@ The polling interval is defined in the mqttPollingInterval field
 <?xml version="1.0" encoding="utf-8" ?>
 <configuration>
   <mqtt>
-    <add key="mqttURI" value="192.168.2.34" />
+    <add key="mqttURI" value="192.168.2.73" />
     <add key="mqttUser" value="mqttusername" />
     <add key="mqttPassword" value="secretpassword" />
     <add key="mqttPort" value="1883" />
